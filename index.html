@@ -18,7 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root { --bim-green: #00693c; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; overflow-x: hidden; height: 100vh; margin: 0; display: flex; flex-direction: column;}
@@ -1645,18 +1646,93 @@
         sendMealData(mealArray);
     }
 
-    function downloadExcelTemplate() {
-        let dStrInput = document.getElementById('ro-date').value; if(!dStrInput) return showToast("Vui lòng chọn ngày để tải mẫu!", "danger");
-        let dStr = dStrInput.split(' to ')[0]; let parts = dStr.split('/'); let dateDisplay = `${parts[0]}.${parts[1]}.${parts[2].substring(2)}`; 
-        let exportData = [ ["DANH SÁCH ĐĂNG KÝ SUẤT ĂN"], ["Ngày:", dStr], [], [], [] ]; exportData.push(["STT", "MÃ NV", "Họ Và Tên", "Bộ phận chấm công gốc", "Bộ phận cấp 2", "Ăn sáng", "Ăn trưa", "Ăn chiều", "Tăng ca", "Ghi chú"]);
-        let c = 1, sDepts = getCheckedTreeVals('ro-dept-tree');
-        employeeData.forEach(e => {
-            let matchDept = (sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2); if(!matchDept) return;
-            let myMeal = dashboardData.find(m => String(m.mnv) === String(e.mnv) && m.date === dStr);
-            let bf = (myMeal && myMeal.breakfast && myMeal.breakfast !== '0') ? myMeal.breakfast : "", lu = (myMeal && myMeal.lunch && myMeal.lunch !== '0') ? myMeal.lunch : "", di = (myMeal && myMeal.dinner && myMeal.dinner !== '0') ? myMeal.dinner : "", ot = (myMeal && myMeal.ot && myMeal.ot !== '0') ? myMeal.ot : "", note = myMeal ? (myMeal.note || "") : "";
-            exportData.push([ c++, e.mnv, e.name, e.bp_goc, e.dept_cap2, bf, lu, di, ot, note ]);
-        });
-        let ws = XLSX.utils.aoa_to_sheet(exportData); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, dateDisplay); XLSX.writeFile(wb, `upload_suatcom_${dateDisplay}.xlsx`);
+async function downloadExcelTemplate() {
+        let dStrInput = document.getElementById('ro-date').value; 
+        if(!dStrInput) return showToast("Vui lòng chọn ngày để tải mẫu!", "danger");
+        
+        showToast("Đang tải dữ liệu vào file mẫu, vui lòng đợi...", "info");
+        
+        let dStr = dStrInput.split(' to ')[0]; 
+        let parts = dStr.split('/'); 
+        let dateSheet = `${parts[0]}.${parts[1]}.${parts[2].substring(2)}`; // Định dạng tên sheet: dd.mm.yy
+        let dateB3 = `${parts[0]}.${parts[1]}.${parts[2]}`; // Định dạng ô B3: dd.mm.yyyy
+        
+        // Link RAW trực tiếp từ GitHub để tránh hoàn toàn lỗi CORS
+        const TEMPLATE_URL = 'https://raw.githubusercontent.com/trunghieuappsheet-cell/BMMS/main/upload_suatcom_dd.mm.yy.xlsx'; 
+        
+        try {
+            // 1. Tải file mẫu từ GitHub về dưới dạng ArrayBuffer
+            let response = await fetch(TEMPLATE_URL);
+            if (!response.ok) throw new Error("Không thể tải file mẫu từ Server.");
+            let buffer = await response.arrayBuffer();
+
+            // 2. Nạp file mẫu vào thư viện ExcelJS
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer);
+            
+            // 3. Lấy Sheet đầu tiên trong file mẫu
+            const worksheet = workbook.worksheets[0];
+            
+            // Đổi tên Sheet thành dd.mm.yy để Upload nhận diện ngày
+            worksheet.name = dateSheet;
+
+            // Xử lý chuỗi Bộ phận cho ô B2
+            let sDepts = getCheckedTreeVals('ro-dept-tree');
+            let firstMatch = employeeData.find(e => (sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2));
+            
+            let deptPath = "Tất cả bộ phận";
+            if (firstMatch && sDepts.length > 0) {
+                let p1 = firstMatch.bp1, p2 = firstMatch.dept_cap2, p3 = firstMatch.bp3;
+                if (p1 && p2 && p3) deptPath = `${p1} >> ${p2} > ${p3}`;
+                else if (p1 && p2) deptPath = `${p1} >> ${p2}`;
+                else if (p1) deptPath = p1;
+            }
+            
+            // Điền dữ liệu vào ô B2 và B3
+            let cellB2 = worksheet.getCell('B2');
+            if(cellB2) cellB2.value = deptPath;
+            
+            let cellB3 = worksheet.getCell('B3');
+            if(cellB3) cellB3.value = dateB3;
+
+            // 4. Bắt đầu điền danh sách dữ liệu từ DÒNG 6
+            let currentRow = 6; 
+            let c = 1;
+            
+            employeeData.forEach(e => {
+                let matchDept = (sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2); 
+                if(!matchDept) return;
+                
+                let myMeal = dashboardData.find(m => String(m.mnv) === String(e.mnv) && m.date === dStr);
+                let bf = (myMeal && myMeal.breakfast && myMeal.breakfast !== '0') ? myMeal.breakfast : "";
+                let lu = (myMeal && myMeal.lunch && myMeal.lunch !== '0') ? myMeal.lunch : "";
+                let di = (myMeal && myMeal.dinner && myMeal.dinner !== '0') ? myMeal.dinner : "";
+                let ot = (myMeal && myMeal.ot && myMeal.ot !== '0') ? myMeal.ot : "";
+                let note = myMeal ? (myMeal.note || "") : "";
+                
+                // Điền dữ liệu vào dòng hiện tại
+                worksheet.getRow(currentRow).values = [ c++, e.mnv, e.name, e.bp_goc, e.dept_cap2, bf, lu, di, ot, note ];
+                
+                // Kẻ viền và căn lề cho các dòng dữ liệu mới chèn
+                for(let i=1; i<=10; i++) {
+                    let dataCell = worksheet.getCell(currentRow, i);
+                    dataCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                    // Căn giữa cho STT, Mã NV, và các cột Suất ăn
+                    if([1, 2, 6, 7, 8, 9].includes(i)) dataCell.alignment = { horizontal: 'center', vertical: 'middle' }; 
+                }
+                
+                currentRow++;
+            });
+
+            // 5. Đóng gói và tải file xuống
+            const outBuffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([outBuffer]), `upload_suatcom_${dateSheet}.xlsx`);
+            showToast("Đã tải file mẫu thành công!", "success");
+
+        } catch (error) {
+            console.error("Lỗi tạo file excel:", error);
+            showToast("Lỗi khi tải file mẫu! Vui lòng kiểm tra lại mạng hoặc link.", "danger");
+        }
     }
 
     function handleExcelUpload(event) {
