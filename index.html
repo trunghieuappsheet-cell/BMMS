@@ -888,8 +888,11 @@
         </ul>
         <form id="emp-form">
             <div class="row g-3 align-items-center">
-                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">Mã NV (*)</label><input type="text" class="form-control border-primary" id="mod-mnv" required></div>
-                <div class="col-md-4 emp-field emp-field-ct emp-field-guest"><label class="fw-bold small">Họ tên (*)</label><input type="text" class="form-control border-primary" id="mod-name" required></div>
+                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">Mã NV (*)</label><input type="text" class="form-control border-primary" id="mod-mnv" required></div> 
+				<div class="col-md-4 emp-field emp-field-ct emp-field-guest">
+					<label class="fw-bold small">Họ tên (*)</label>
+					<textarea class="form-control border-primary" id="mod-name" rows="1" placeholder="Ngăn cách bằng Enter hoặc dấu phẩy..." required></textarea>
+				</div>				
                 <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">SĐT (*)</label><input type="text" class="form-control border-primary" id="mod-phone"></div>
                 <div class="col-md-2 emp-field"><label class="fw-bold small">Giới tính</label><input type="text" class="form-control border-primary" id="mod-gender" list="list-gender"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small">CCCD (Mật khẩu)</label><input type="text" class="form-control border-primary" id="mod-cccd"></div>
@@ -1913,7 +1916,7 @@
     
     function parseToDateObj(dStr) { let p = dStr.split('/'); return new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); }
 
-    async function downloadExcelTemplate(mode = 'ro') {
+async function downloadExcelTemplate(mode = 'ro') {
         let dStrInput = document.getElementById(mode + '-date').value; 
         if(!dStrInput) return showToast("Vui lòng chọn ngày để tải mẫu!", "danger");
         
@@ -1932,14 +1935,61 @@
             let buffer = await response.arrayBuffer();
 
             let outWb = new ExcelJS.Workbook();
+            await outWb.xlsx.load(buffer);
+            
+            // =========================================================
+            // FIX LỖI "Shared Formula master must exist..." CỦA EXCELJS
+            outWb.worksheets.forEach(ws => {
+                ws.eachRow((row) => {
+                    row.eachCell((cell) => {
+                        if (cell.type === ExcelJS.ValueType.Formula) {
+                            cell.value = { formula: cell.formula, result: cell.result };
+                        }
+                    });
+                });
+            });
+            // =========================================================
+
+            let wsTemplate = outWb.worksheets[0];
+
             for (let d = 0; d < datesToExport.length; d++) {
-                let tempWb = new ExcelJS.Workbook();
-                await tempWb.xlsx.load(buffer);
-                let ws = tempWb.worksheets[0];
                 let dStr = datesToExport[d];
                 let parts = dStr.split('/');
                 let sName = `${parts[0]}.${parts[1]}`;
-                ws.name = sName;
+                
+                let newSheet = outWb.addWorksheet(sName);
+                
+                // Deep Clone: Copy Layout, Thuộc tính
+                newSheet.properties = JSON.parse(JSON.stringify(wsTemplate.properties || {}));
+                newSheet.pageSetup = JSON.parse(JSON.stringify(wsTemplate.pageSetup || {}));
+                newSheet.views = JSON.parse(JSON.stringify(wsTemplate.views || []));
+
+                // Deep Clone: Copy độ rộng cột
+                wsTemplate.columns.forEach((col, index) => {
+                    let newCol = newSheet.getColumn(index + 1);
+                    if(col.width) newCol.width = col.width;
+                    if(col.hidden) newCol.hidden = col.hidden;
+                    if(col.style) newCol.style = col.style;
+                });
+
+                // Deep Clone: Copy Header (dòng 1-6)
+                wsTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                    if (rowNumber <= 6) {
+                        let newRow = newSheet.getRow(rowNumber);
+                        newRow.height = row.height;
+                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                            let newCell = newRow.getCell(colNumber);
+                            newCell.value = cell.value;
+                            newCell.style = cell.style; 
+                        });
+                    }
+                });
+
+                if (wsTemplate.model.merges) {
+                    wsTemplate.model.merges.forEach(m => {
+                        try { newSheet.mergeCells(m); } catch(e){}
+                    });
+                }
                 
                 let filteredEmps = employeeData.filter(e => {
                     return ((sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2)) 
@@ -1950,8 +2000,8 @@
                 let uniqueDepts = [...new Set(filteredEmps.map(e => e.dept_cap2 || e.bp1))].filter(Boolean);
                 let deptPath = uniqueDepts.length === 1 && sDepts.length === 1 ? uniqueDepts[0] : "Cơ sở Phú Quốc";
                 
-                ws.getCell('B2').value = deptPath;
-                ws.getCell('B3').value = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                newSheet.getCell('B2').value = deptPath;
+                newSheet.getCell('B3').value = `${parts[0]}.${parts[1]}.${parts[2]}`;
                 
                 let currentRow = 7; let c = 1;
                 filteredEmps.forEach(e => {
@@ -1967,19 +2017,21 @@
                     let ot = (myMeal && myMeal.ot && myMeal.ot !== '0') ? myMeal.ot : "";
                     let note = myMeal ? (myMeal.note || "") : "";
                     
-                    ws.getRow(currentRow).values = [ c++, e.mnv, e.name, e.bp_goc, e.dept_cap2, bf, lu, di, ot, note ];
+                    // Đã bổ sung e.company vào đúng vị trí thứ 4
+                    let rowVals = [ c++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2, bf, lu, di, ot, note ];
                     
-                    for(let i=1; i<=10; i++) {
-                        let dataCell = ws.getCell(currentRow, i);
-                        dataCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-                        if([1, 2, 4, 5, 6, 7, 8, 9].includes(i)) dataCell.alignment = { horizontal: 'center', vertical: 'middle' }; 
-                    }
+                    rowVals.forEach((val, i) => {
+                        let cell = newSheet.getCell(currentRow, i + 1);
+                        cell.value = val;
+                        cell.style = wsTemplate.getCell(7, i + 1).style; // Clone Format mẫu từ dòng 7
+                    });
+                    
                     currentRow++;
                 });
-
-                let newSheet = outWb.addWorksheet(sName);
-                newSheet.model = ws.model; 
             }
+            
+            // Xóa sheet mẫu
+            outWb.removeWorksheet(wsTemplate.id);
 
             const outBuffer = await outWb.xlsx.writeBuffer();
             function formatDateForFile(dStr) { let p = dStr.split('/'); return `${p[0]}.${p[1]}.${p[2].substring(2)}`; }
@@ -1994,17 +2046,24 @@
         }
     }
 
-    function handleExcelUpload(event, mode = 'ro') {
+function handleExcelUpload(event, mode = 'ro') {
         let file = event.target.files[0]; if(!file) return; let reader = new FileReader();
         reader.onload = function(e) {
             try {
                 let data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'});
                 let validMeals = [], errors = [];
                 
+                // Các sheet cần bỏ qua (Sheet báo cáo)
+                const ignoreSheets = ["Hiệu chỉnh", "Thực tế", "Ăn Sang", "Ăn Trưa", "Ăn Tối", "Tăng Ca", "Tổng hợp"];
+                
                 workbook.SheetNames.forEach(sheetName => {
+                    // Bỏ qua sheet báo cáo và sheet template gốc
+                    if (ignoreSheets.includes(sheetName) || sheetName.trim() === "dd.mm.yy") return;
+
                     let worksheet = workbook.Sheets[sheetName];
                     let jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                     
+                    // Đọc ngày ở ô B3 (Dòng 3, Cột 2) -> index: jsonData[2][1]
                     let dStrB3 = '';
                     if(jsonData[2] && jsonData[2][1]) {
                         let rawD = String(jsonData[2][1]).trim();
@@ -2013,12 +2072,29 @@
                     }
                     if (!dStrB3 || dStrB3.length < 8) return;
 
+                    // Đọc dữ liệu đăng ký/hiệu chỉnh từ dòng số 7 (index 6)
                     for(let i = 6; i < jsonData.length; i++) {
-                        let row = jsonData[i]; if(!row || row.length === 0 || !row[1]) continue; if(String(row[1]).includes("MÃ NV")) continue; 
-                        let mnv = String(row[1]).trim(), emp = employeeData.find(e => String(e.mnv) === mnv); if(!emp) { errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Không tìm thấy Mã NV.`); continue; }
+                        let row = jsonData[i]; 
                         
-                        let bf = mapExcelMealValue(row[5]), lu = mapExcelMealValue(row[6]), di = mapExcelMealValue(row[7]), ot = mapExcelMealValue(row[8]), note = row[9] ? String(row[9]).trim() : '';
-                        if(bf === 'INVALID' || lu === 'INVALID' || di === 'INVALID' || ot === 'INVALID') { errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Giá trị suất ăn không hợp lệ.`); continue; }
+                        // Cột Mã NV là cột B (index 1)
+                        if(!row || row.length === 0 || !row[1]) continue; 
+                        if(String(row[1]).includes("MÃ NV")) continue; 
+                        
+                        let mnv = String(row[1]).trim(), emp = employeeData.find(e => String(e.mnv) === mnv); 
+                        if(!emp) { errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Không tìm thấy Mã NV.`); continue; }
+                        
+                        // Map cột: G(6)=Sáng, H(7)=Trưa, I(8)=Tối, J(9)=Tăng ca, K(10)=Ghi chú
+                        let bf = mapExcelMealValue(row[6]), 
+                            lu = mapExcelMealValue(row[7]), 
+                            di = mapExcelMealValue(row[8]), 
+                            ot = mapExcelMealValue(row[9]), 
+                            note = row[10] ? String(row[10]).trim() : '';
+                        
+                        if(bf === 'INVALID' || lu === 'INVALID' || di === 'INVALID' || ot === 'INVALID') { 
+                            errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Giá trị suất ăn không hợp lệ.`); 
+                            continue; 
+                        }
+                        
                         validMeals.push({ mnv: mnv, name: emp.name, date: dStrB3, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note });
                     }
                 });
@@ -2035,7 +2111,7 @@
                     if(validMeals.length > 0) {
                         if(mode === 'adj') sendAdjustData(validMeals);
                         else sendMealData(validMeals);
-                    } else showToast("File rỗng hoặc không đúng định dạng mẫu.", "danger"); 
+                    } else showToast("File rỗng hoặc không có sheet ngày (dd.mm.yy) hợp lệ.", "danger"); 
                 }
             } catch(err) { showToast("Đã xảy ra lỗi đọc file Excel!", "danger"); }
         }; reader.readAsArrayBuffer(file);
@@ -2043,17 +2119,17 @@
     
     function mapExcelMealValue(val) { if(val === undefined || val === null || val === '') return '0'; let v = String(val).trim().toUpperCase(); if(v === '0' || v === 'O' || v === '-') return '0'; if(v === 'X' || v === 'Y') return v; return 'INVALID'; }
 
-    async function exportReportsExcel() {
+async function exportReportsExcel() {
         let dStrInput = document.getElementById('rep-date').value; 
         if(!dStrInput) return showToast("Vui lòng chọn ngày để xuất!", "danger");
         let datesToExport = getDatesInRange(dStrInput);
-        let repType = document.getElementById('rep-export-type').value; 
         
         let sDepts = getCheckedTreeVals('rep-dept-tree');
         let sStatuses = getCheckedStatuses('rep');
         let sBpGoc = getCheckedBpGoc('rep');
+        let isAdjMode = document.getElementById('rep-data-type').value === 'ADJ';
         
-        showToast("Đang tạo báo cáo Excel từ file mẫu...", "info");
+        showToast("Đang tạo báo cáo Excel từ file mẫu, vui lòng đợi...", "info");
         
         const TEMPLATE_URL = 'https://raw.githubusercontent.com/trunghieuappsheet-cell/BMMS/main/upload_baocao_dd.mm.yy.xlsx';
         
@@ -2064,14 +2140,27 @@
 
             let wb = new ExcelJS.Workbook();
             await wb.xlsx.load(buffer);
+
+            // =========================================================
+            // BẺ GÃY LIÊN KẾT SHARED FORMULA ĐỂ CHỐNG CRASH EXCELJS
+            wb.worksheets.forEach(ws => {
+                ws.eachRow((row) => {
+                    row.eachCell((cell) => {
+                        if (cell.type === ExcelJS.ValueType.Formula) {
+                            cell.value = { formula: cell.formula, result: cell.result };
+                        }
+                    });
+                });
+            });
+            // =========================================================
             
-            let wsReal = wb.getWorksheet('Thực tế');
-            let wsAdj = wb.getWorksheet('Hiệu chỉnh');
-            let wsBf = wb.getWorksheet('Ăn Sáng');
+            let wsReal = wb.getWorksheet('Thực tế') || wb.getWorksheet('Thực Tế');
+            let wsAdj = wb.getWorksheet('Hiệu chỉnh') || wb.getWorksheet('Hiệu Chỉnh');
+            let wsBf = wb.getWorksheet('Ăn Sáng') || wb.getWorksheet('Ăn Sang');
             let wsLu = wb.getWorksheet('Ăn Trưa');
-            let wsDi = wb.getWorksheet('Ăn Tối');
+            let wsDi = wb.getWorksheet('Ăn Tối') || wb.getWorksheet('Ăn Toi');
             let wsOt = wb.getWorksheet('Tăng Ca');
-            let wsSum = wb.getWorksheet('Tổng hợp');
+            let wsSum = wb.getWorksheet('Tổng hợp') || wb.getWorksheet('Tổng Hợp');
             let wsDailyTemplate = wb.getWorksheet('dd.mm.yy'); 
             
             let filteredEmps = employeeData.filter(e => {
@@ -2083,115 +2172,288 @@
             let realMap = {}, adjMap = {};
             dashboardData.forEach(r => realMap[`${r.mnv}_${r.date}`] = {...r});
             hcData.forEach(r => adjMap[`${r.mnv}_${r.date}`] = {...r});
+
+            // CHỈ LẤY NHÂN VIÊN CÓ PHÁT SINH ĐĂNG KÝ ĂN
+            let activeEmps = filteredEmps.filter(e => {
+                let hasMeal = false;
+                datesToExport.forEach(dStr => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                    let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                    let fData = isAdjMode ? {
+                        bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
+                        di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
+                    } : { bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot };
+
+                    if (fData.bf !== '0' || fData.lu !== '0' || fData.di !== '0' || fData.ot !== '0') {
+                        hasMeal = true;
+                    }
+                });
+                return hasMeal;
+            });
+
+            // =========================================================
+            // 1. FILL SHEET THỰC TẾ & HIỆU CHỈNH
+            // =========================================================
+            let rIdxAgg = 3;
+            let realColSums = [0, 0, 0, 0, 0, 0, 0];
+            let adjColSums = [0, 0, 0, 0, 0, 0, 0];
+            let diffColSums = [0, 0, 0, 0, 0, 0, 0];
+
+            datesToExport.forEach(dStr => {
+                let parts = dStr.split('/');
+                let dayDisp = `${parts[0]}/${parts[1]}`; // dd/mm
+                
+                let r_btS=0, r_btTr=0, r_btTo=0, r_hyS=0, r_hyTr=0, r_hyTo=0, r_ot=0;
+                let a_btS=0, a_btTr=0, a_btTo=0, a_hyS=0, a_hyTr=0, a_hyTo=0, a_ot=0;
+
+                activeEmps.forEach(e => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                    let mAdj = adjMap[`${e.mnv}_${dStr}`];
+
+                    // Gom số Thực tế
+                    if(mReal.breakfast === 'X') r_btS++; else if(mReal.breakfast === 'Y') r_hyS++;
+                    if(mReal.lunch === 'X') r_btTr++; else if(mReal.lunch === 'Y') r_hyTr++;
+                    if(mReal.dinner === 'X') r_btTo++; else if(mReal.dinner === 'Y') r_hyTo++;
+                    if(mReal.ot === 'X' || mReal.ot === 'Y') r_ot++;
+
+                    // Gom số Hiệu chỉnh
+                    let a_bf = mAdj ? mAdj.breakfast : mReal.breakfast;
+                    let a_lu = mAdj ? mAdj.lunch : mReal.lunch;
+                    let a_di = mAdj ? mAdj.dinner : mReal.dinner;
+                    let a_otVal = mAdj ? mAdj.ot : mReal.ot;
+
+                    if(a_bf === 'X') a_btS++; else if(a_bf === 'Y') a_hyS++;
+                    if(a_lu === 'X') a_btTr++; else if(a_lu === 'Y') a_hyTr++;
+                    if(a_di === 'X') a_btTo++; else if(a_di === 'Y') a_hyTo++;
+                    if(a_otVal === 'X' || a_otVal === 'Y') a_ot++;
+                });
+
+                if (rIdxAgg <= 33) {
+                    let rVals = [dayDisp, r_btS, r_btTr, r_btTo, r_hyS, r_hyTr, r_hyTo, r_ot];
+                    let aVals = [dayDisp, a_btS, a_btTr, a_btTo, a_hyS, a_hyTr, a_hyTo, a_ot];
+                    let dVals = [a_btS - r_btS, a_btTr - r_btTr, a_btTo - r_btTo, a_hyS - r_hyS, a_hyTr - r_hyTr, a_hyTo - r_hyTo, a_ot - r_ot];
+
+                    if (wsReal) {
+                        // Cột 1-8 ghi Thực tế
+                        rVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 1).value = v; });
+                        // Cột K-Q (11-17) ghi Chênh Lệch
+                        dVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 11).value = v; });
+                    }
+                    if (wsAdj) {
+                        aVals.forEach((v, i) => { wsAdj.getCell(rIdxAgg, i + 1).value = v; });
+                    }
+                    rIdxAgg++;
+                }
+
+                realColSums[0]+=r_btS; realColSums[1]+=r_btTr; realColSums[2]+=r_btTo;
+                realColSums[3]+=r_hyS; realColSums[4]+=r_hyTr; realColSums[5]+=r_hyTo;
+                realColSums[6]+=r_ot;
+
+                adjColSums[0]+=a_btS; adjColSums[1]+=a_btTr; adjColSums[2]+=a_btTo;
+                adjColSums[3]+=a_hyS; adjColSums[4]+=a_hyTr; adjColSums[5]+=a_hyTo;
+                adjColSums[6]+=a_ot;
+
+                diffColSums[0]+=a_btS - r_btS; diffColSums[1]+=a_btTr - r_btTr; diffColSums[2]+=a_btTo - r_btTo;
+                diffColSums[3]+=a_hyS - r_hyS; diffColSums[4]+=a_hyTr - r_hyTr; diffColSums[5]+=a_hyTo - r_hyTo;
+                diffColSums[6]+=a_ot - r_ot;
+            });
+
+            let p = appSettings.mealPrices || { bf: 0, lu: 0, di: 0, ot: 0 };
             
-            const fillDataSheet = (ws, isAdj) => {
+            // Ghi TỔNG và TIỀN CHỈ GÁN VALUE (Bảo toàn định dạng)
+            if (wsReal) {
+                realColSums.forEach((v, i) => { wsReal.getCell(35, i + 2).value = v; });
+                
+                let realMoney = [realColSums[0]*p.bf, realColSums[1]*p.lu, realColSums[2]*p.di, realColSums[3]*p.bf, realColSums[4]*p.lu, realColSums[5]*p.di, realColSums[6]*p.ot];
+                realMoney.forEach((v, i) => { wsReal.getCell(37, i + 2).value = v; });
+                
+                diffColSums.forEach((v, i) => { wsReal.getCell(41, i + 11).value = v; });
+                
+                let diffMoney = [diffColSums[0]*p.bf, diffColSums[1]*p.lu, diffColSums[2]*p.di, diffColSums[3]*p.bf, diffColSums[4]*p.lu, diffColSums[5]*p.di, diffColSums[6]*p.ot];
+                diffMoney.forEach((v, i) => { wsReal.getCell(43, i + 11).value = v; });
+
+                // Dòng 45: Tổng chênh lệch Sáng (B), Trưa (D), Tối (F), Tăng Ca (H)
+                wsReal.getCell(45, 2).value = diffColSums[0] + diffColSums[3]; 
+                wsReal.getCell(45, 4).value = diffColSums[1] + diffColSums[4]; 
+                wsReal.getCell(45, 6).value = diffColSums[2] + diffColSums[5]; 
+                wsReal.getCell(45, 8).value = diffColSums[6];                  
+            }
+
+            if (wsAdj) {
+                adjColSums.forEach((v, i) => { wsAdj.getCell(35, i + 2).value = v; });
+                
+                let adjMoney = [adjColSums[0]*p.bf, adjColSums[1]*p.lu, adjColSums[2]*p.di, adjColSums[3]*p.bf, adjColSums[4]*p.lu, adjColSums[5]*p.di, adjColSums[6]*p.ot];
+                adjMoney.forEach((v, i) => { wsAdj.getCell(37, i + 2).value = v; });
+            }
+
+            // =========================================================
+            // 2. FILL SHEET ĂN SÁNG, TRƯA, TỐI, TĂNG CA
+            // =========================================================
+            const fillMealDetailSheet = (ws, mealType) => {
                 if(!ws) return;
-                let rIdx = 7; let cIdx = 1;
-                filteredEmps.forEach(e => {
+                let price = p[mealType] || 0;
+
+                // Điền Ngày (Dòng 2)
+                datesToExport.forEach((dStr, i) => { 
+                    let parts = dStr.split('/');
+                    ws.getCell(2, 7 + i).value = `${parts[0]}/${parts[1]}`; 
+                });
+                
+                let rIdx = 3; let cIdx = 1;
+                let dailySums = new Array(datesToExport.length).fill(0);
+
+                activeEmps.forEach(e => {
                     let rowData = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2];
-                    datesToExport.forEach(dStr => {
+                    let rowSum = 0;
+                    
+                    datesToExport.forEach((dStr, i) => {
                         let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
                         let mAdj = adjMap[`${e.mnv}_${dStr}`];
-                        let fData = isAdj ? {
+                        let fData = isAdjMode ? {
                             bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
                             di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
                         } : { bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot };
-                        
-                        let meals = [];
-                        if (fData.bf !== '0') meals.push('S:'+fData.bf);
-                        if (fData.lu !== '0') meals.push('T:'+fData.lu);
-                        if (fData.di !== '0') meals.push('C:'+fData.di);
-                        if (fData.ot !== '0') meals.push('TC:'+fData.ot);
-                        rowData.push(meals.join(', '));
-                    });
-                    ws.getRow(rIdx).values = rowData;
-                    rIdx++;
-                });
-            };
-            fillDataSheet(wsReal, false);
-            fillDataSheet(wsAdj, true);
-            
-            const fillMealSheet = (ws, mealType) => {
-                if(!ws) return;
-                let dateRow = ws.getRow(3);
-                datesToExport.forEach((dStr, i) => { dateRow.getCell(7 + i).value = dStr; });
-                
-                let rIdx = 7; let cIdx = 1;
-                filteredEmps.forEach(e => {
-                    let rowData = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2];
-                    datesToExport.forEach(dStr => {
-                        let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
-                        let mAdj = adjMap[`${e.mnv}_${dStr}`];
-                        let fData = {
-                            bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
-                            di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
-                        };
+
                         let val = '0';
                         if(mealType==='bf') val = fData.bf;
                         else if(mealType==='lu') val = fData.lu;
                         else if(mealType==='di') val = fData.di;
                         else if(mealType==='ot') val = fData.ot;
                         
-                        rowData.push((val === 'X' || val === 'Y') ? 1 : 0);
+                        let isEaten = (val === 'X' || val === 'Y') ? 1 : 0;
+                        rowData.push(isEaten);
+                        dailySums[i] += isEaten;
+                        rowSum += isEaten;
                     });
-                    ws.getRow(rIdx).values = rowData;
+                    
+                    // Điền giá trị Data
+                    rowData.forEach((val, colI) => {
+                        ws.getCell(rIdx, colI + 1).value = val;
+                    });
+
+                    // Tính Cột AL (38) và AM (39)
+                    ws.getCell(rIdx, 38).value = rowSum;
+                    ws.getCell(rIdx, 39).value = rowSum * price;
+
                     rIdx++;
                 });
+
+                // Điền Tổng (Dòng 1)
+                dailySums.forEach((sumVal, i) => {
+                    ws.getCell(1, 7 + i).value = sumVal;
+                });
             };
-            fillMealSheet(wsBf, 'bf');
-            fillMealSheet(wsLu, 'lu');
-            fillMealSheet(wsDi, 'di');
-            fillMealSheet(wsOt, 'ot');
             
+            fillMealDetailSheet(wsBf, 'bf');
+            fillMealDetailSheet(wsLu, 'lu');
+            fillMealDetailSheet(wsDi, 'di');
+            fillMealDetailSheet(wsOt, 'ot');
+
+            // =========================================================
+            // 3. FILL SHEET TỔNG HỢP
+            // =========================================================
             if(wsSum) {
-                let dateRow = wsSum.getRow(3);
-                datesToExport.forEach((dStr, i) => { dateRow.getCell(7 + i).value = dStr; });
+                let rIdx = 7; 
+                let cIdx = 1;
                 
-                let rIdx = 7; let cIdx = 1;
-                filteredEmps.forEach(e => {
-                    let rowData = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2];
+                activeEmps.forEach(e => {
+                    let sumS = 0, sumTr = 0, sumTo = 0, sumOt = 0;
+                    let notes = [];
+                    
                     datesToExport.forEach(dStr => {
-                        let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                        let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0', note: '' };
                         let mAdj = adjMap[`${e.mnv}_${dStr}`];
-                        let fData = {
+                        let fData = isAdjMode ? {
                             bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
-                            di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
-                        };
-                        let dailyTotal = 0;
-                        if(fData.bf === 'X' || fData.bf === 'Y') dailyTotal++;
-                        if(fData.lu === 'X' || fData.lu === 'Y') dailyTotal++;
-                        if(fData.di === 'X' || fData.di === 'Y') dailyTotal++;
-                        if(fData.ot === 'X' || fData.ot === 'Y') dailyTotal++;
-                        rowData.push(dailyTotal);
+                            di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot, note: mAdj ? mAdj.note : mReal.note
+                        } : { bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot, note: mReal.note };
+
+                        if(fData.bf === 'X' || fData.bf === 'Y') sumS++;
+                        if(fData.lu === 'X' || fData.lu === 'Y') sumTr++;
+                        if(fData.di === 'X' || fData.di === 'Y') sumTo++;
+                        if(fData.ot === 'X' || fData.ot === 'Y') sumOt++;
+                        if(fData.note && fData.note.trim() !== '') notes.push(fData.note.trim());
                     });
-                    wsSum.getRow(rIdx).values = rowData;
+                    
+                    let uniqueNotes = [...new Set(notes)].join(', ');
+                    let rowVals = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2, sumS, sumTr, sumTo, sumOt, uniqueNotes];
+
+                    // Trực tiếp gán .value (Bảo tồn format có sẵn của file mẫu)
+                    rowVals.forEach((val, i) => {
+                        wsSum.getCell(rIdx, i + 1).value = val;
+                    });
                     rIdx++;
                 });
             }
             
-            if (repType === 'DETAIL' && wsDailyTemplate) {
+            // =========================================================
+            // 4. FILL DD.MM.YY (DEEP CLONE TEMPLATE CHỐNG LỖI MẤT KẺ BẢNG)
+            // =========================================================
+            if (wsDailyTemplate) {
                 datesToExport.forEach(dStr => {
+                    let activeEmpsToday = activeEmps.filter(e => {
+                        let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                        let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                        let fData = isAdjMode ? {
+                            bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
+                            di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
+                        } : { bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot };
+                        
+                        return fData.bf !== '0' || fData.lu !== '0' || fData.di !== '0' || fData.ot !== '0';
+                    });
+
+                    // Ngày không có người ăn thì không tạo sheet
+                    if(activeEmpsToday.length === 0) return;
+
                     let parts = dStr.split('/');
-                    let sName = `${parts[0]}.${parts[1]}`;
+                    let yShort = parts[2].length === 4 ? parts[2].substring(2) : parts[2];
+                    let sName = `${parts[0]}.${parts[1]}.${yShort}`; 
                     
                     let newSheet = wb.addWorksheet(sName);
-                    newSheet.model = Object.assign(wsDailyTemplate.model, {
-                        mergeCells: wsDailyTemplate.model.mergeCells || [],
-                        name: sName
-                    });
                     
-                    newSheet.getCell('B3').value = dStr;
+                    // Deep Clone: Copy Layout, Thuộc tính, Tab Color
+                    newSheet.properties = JSON.parse(JSON.stringify(wsDailyTemplate.properties || {}));
+                    newSheet.pageSetup = JSON.parse(JSON.stringify(wsDailyTemplate.pageSetup || {}));
+                    newSheet.views = JSON.parse(JSON.stringify(wsDailyTemplate.views || []));
+
+                    // Deep Clone: Copy độ rộng cột chính xác
+                    wsDailyTemplate.columns.forEach((col, index) => {
+                        let newCol = newSheet.getColumn(index + 1);
+                        if(col.width) newCol.width = col.width;
+                        if(col.hidden) newCol.hidden = col.hidden;
+                        if(col.style) newCol.style = col.style;
+                    });
+
+                    // Deep Clone: Copy toàn bộ dòng, ô, màu nền, đường kẻ
+                    wsDailyTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                        let newRow = newSheet.getRow(rowNumber);
+                        newRow.height = row.height;
+                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                            let newCell = newRow.getCell(colNumber);
+                            newCell.value = cell.value;
+                            newCell.style = cell.style; 
+                        });
+                    });
+
+                    // Deep Clone: Copy các ô bị gộp
+                    if (wsDailyTemplate.model.merges) {
+                        wsDailyTemplate.model.merges.forEach(m => {
+                            try { newSheet.mergeCells(m); } catch(e){}
+                        });
+                    }
+                    
+                    newSheet.getCell('B3').value = `${parts[0]}.${parts[1]}.${parts[2]}`;
                     
                     let rIdx = 7; let cIdx = 1;
-                    filteredEmps.forEach(e => {
+                    
+                    activeEmpsToday.forEach(e => {
                         let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0', note: '' };
                         let mAdj = adjMap[`${e.mnv}_${dStr}`];
-                        let fData = {
-                            bf: mAdj ? mAdj.breakfast : mReal.breakfast,
-                            lu: mAdj ? mAdj.lunch : mReal.lunch,
-                            di: mAdj ? mAdj.dinner : mReal.dinner,
-                            ot: mAdj ? mAdj.ot : mReal.ot,
-                            note: mAdj ? mAdj.note : mReal.note
+                        let fData = isAdjMode ? {
+                            bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
+                            di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot, note: mAdj ? mAdj.note : mReal.note
+                        } : {
+                            bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot, note: mReal.note
                         };
                         
                         let bfZ = (fData.bf === '0') ? '' : fData.bf;
@@ -2199,24 +2461,28 @@
                         let diZ = (fData.di === '0') ? '' : fData.di;
                         let otZ = (fData.ot === '0') ? '' : fData.ot;
 
-                        newSheet.getRow(rIdx).values = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2, bfZ, luZ, diZ, otZ, fData.note];
+                        let rowVals = [cIdx++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2, bfZ, luZ, diZ, otZ, fData.note];
+                        
+                        // Gán giá trị vào template
+                        rowVals.forEach((val, i) => {
+                            newSheet.getCell(rIdx, i + 1).value = val;
+                        });
                         rIdx++;
                     });
                 });
-            }
-            
-            if (wsDailyTemplate) {
+                
+                // Xóa file template trắng ban đầu đi
                 wb.removeWorksheet(wsDailyTemplate.id);
             }
 
             const outBuffer = await wb.xlsx.writeBuffer();
             let fname = dStrInput.includes(' to ') ? dStrInput.replace(' to ', '-') : dStrInput;
             saveAs(new Blob([outBuffer]), `BaoCao_SuatAn_${fname.replace(/\//g, '.')}.xlsx`);
-            showToast("Đã tải Báo cáo thành công!", "success");
+            showToast("Đã xuất báo cáo và file Upload thành công!", "success");
 
         } catch (error) {
             console.error("Lỗi tạo file excel:", error);
-            showToast("Lỗi khi tải file báo cáo! Vui lòng kiểm tra lại mạng hoặc link.", "danger");
+            showToast("Lỗi khi tải file báo cáo! Vui lòng kiểm tra lại mạng hoặc link mẫu.", "danger");
         }
     }
 
@@ -2584,45 +2850,146 @@
         let ws = XLSX.utils.aoa_to_sheet(exportData); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "ChiTiet"); XLSX.writeFile(wb, `DS_${currentUnregDept}.xlsx`);
     }
 
-    function exportEmployeesExcel() {
-        let exportData = [ ["DANH SÁCH NHÂN SỰ TOÀN HỆ THỐNG"], ["Ngày xuất:", new Date().toLocaleDateString('vi-VN')], [], [], [], ["Mã NV", "Họ Tên", "Giới tính", "SĐT", "CCCD", "Email", "Đơn vị", "Bộ phận cấp 1", "Bộ phận cấp 2", "Bộ phận cấp 3", "Bộ phận cấp 4", "Bộ phận cấp 5", "BP Chấm công gốc", "Công ty", "Chức danh", "Ngày gia nhập", "Tình trạng", "Ngày nghỉ", "Phân quyền"] ];
-        employeeData.forEach(e => { exportData.push([e.mnv, e.name, e.gender, e.phone, e.cccd, e.email, e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5, e.bp_goc, e.company, e.title, e.joinDate, e.leaveStatus, e.leaveDate, e.role]); });
-        let ws = XLSX.utils.aoa_to_sheet(exportData); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "NhanSu"); XLSX.writeFile(wb, `DanhSachNhanSu_${toDDMMYYYY(new Date())}.xlsx`);
+async function exportEmployeesExcel() {
+        showToast("Đang tạo file Excel Nhân sự...", "info");
+        const TEMPLATE_URL = 'https://raw.githubusercontent.com/trunghieuappsheet-cell/BMMS/main/upload_dsnv_dd.mm.yy.xlsx';
+        
+        try {
+            let response = await fetch(TEMPLATE_URL);
+            if (!response.ok) throw new Error("Không thể tải file mẫu.");
+            let buffer = await response.arrayBuffer();
+
+            let wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(buffer);
+            
+            // =========================================================
+            // FIX LỖI "Shared Formula master must exist..." CỦA EXCELJS
+            wb.worksheets.forEach(ws => {
+                ws.eachRow((row) => {
+                    row.eachCell((cell) => {
+                        if (cell.type === ExcelJS.ValueType.Formula) {
+                            cell.value = { formula: cell.formula, result: cell.result };
+                        }
+                    });
+                });
+            });
+            // =========================================================
+            
+            let ws = wb.worksheets[0]; // Lấy sheet đầu tiên
+            
+            let rIdx = 5; // Bắt đầu ghi từ dòng số 5 theo mẫu
+            let cIdx = 1;
+            
+            employeeData.forEach(e => {
+                let rowVals = [
+                    cIdx++, 
+                    e.mnv, 
+                    e.name, 
+                    e.gender, 
+                    e.phone, 
+                    e.cccd, 
+                    e.email, 
+                    e.dv, 
+                    e.bp1, 
+                    e.dept_cap2, 
+                    e.bp3, 
+                    e.bp4, 
+                    e.bp5, 
+                    e.bp_goc, 
+                    e.company, 
+                    e.title, 
+                    e.joinDate, 
+                    e.leaveStatus, 
+                    e.leaveDate, 
+                    e.role
+                ];
+                
+                // Chỉ gán giá trị và copy định dạng từ dòng 5
+                rowVals.forEach((val, i) => {
+                    let cell = ws.getCell(rIdx, i + 1);
+                    cell.value = val;
+                    cell.style = ws.getCell(5, i + 1).style; // Copy Style
+                });
+                
+                rIdx++;
+            });
+
+            const outBuffer = await wb.xlsx.writeBuffer();
+            saveAs(new Blob([outBuffer]), `DanhSachNhanSu_${toDDMMYYYY(new Date()).replace(/\//g, '.')}.xlsx`);
+            showToast("Đã tải Danh sách nhân sự thành công!", "success");
+
+        } catch (error) {
+            console.error("Lỗi tạo file excel:", error);
+            // Fallback sử dụng SheetJS nếu tải file mẫu bị lỗi mạng
+            let exportData = [ 
+                ["DANH SÁCH NHÂN SỰ TOÀN HỆ THỐNG"], 
+                ["Ngày xuất:", new Date().toLocaleDateString('vi-VN')], 
+                [], 
+                ["STT", "MÃ NV", "Họ Và Tên", "Giới tính", "SĐT", "CCCD", "Email công ty", "Đơn vị", "Bộ phận cấp 1", "Bộ phận cấp 2", "Bộ phận cấp 3", "Bộ phận cấp 4", "Bộ phận cấp 5", "Bộ phận chấm công gốc", "Tên công ty", "Chức danh", "Ngày gia nhập", "Tình trạng", "Ngày nghỉ", "Phân quyền"] 
+            ];
+            let c = 1;
+            employeeData.forEach(e => { exportData.push([c++, e.mnv, e.name, e.gender, e.phone, e.cccd, e.email, e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5, e.bp_goc, e.company, e.title, e.joinDate, e.leaveStatus, e.leaveDate, e.role]); });
+            let wsFallback = XLSX.utils.aoa_to_sheet(exportData); let wbFallback = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wbFallback, wsFallback, "NhanSu"); XLSX.writeFile(wbFallback, `DanhSachNhanSu_${toDDMMYYYY(new Date())}.xlsx`);
+        }
     }
 
     function handleEmployeeExcelUpload(event) {
-        let file = event.target.files[0]; if(!file) return; showToast("Đang đọc file Excel Nhân sự...", "info"); let reader = new FileReader();
+        let file = event.target.files[0]; if(!file) return; 
+        showToast("Đang đọc file Excel Nhân sự...", "info"); 
+        let reader = new FileReader();
         reader.onload = async function(e) {
             try {
-                let data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'}), worksheet = workbook.Sheets[workbook.SheetNames[0]], jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1}), empList = [];
-                for(let i = 6; i < jsonData.length; i++) { 
-                    let row = jsonData[i]; if(!row || row.length === 0 || !row[0]) continue;
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, {type: 'array'});
+                let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                let jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                let empList = [];
+                
+                // Đọc từ dòng 5 (index = 4)
+                for(let i = 4; i < jsonData.length; i++) { 
+                    let row = jsonData[i]; 
+                    // Kiểm tra nếu dòng rỗng hoặc không có cột Mã NV (Cột B = index 1)
+                    if(!row || row.length === 0 || !row[1]) continue;
+                    
                     empList.push({
-                        mnv: String(row[0]||'').trim(),
-                        name: row[1] === undefined ? undefined : String(row[1]).trim(),
-                        gender: row[2] === undefined ? undefined : String(row[2]).trim(),
-                        phone: row[3] === undefined ? undefined : String(row[3]).trim(),
-                        cccd: row[4] === undefined ? undefined : String(row[4]).trim(),
-                        email: row[5] === undefined ? undefined : String(row[5]).trim(),
-                        dv: row[6] === undefined ? undefined : String(row[6]).trim(),
-                        bp1: row[7] === undefined ? undefined : String(row[7]).trim(),
-                        bp2: row[8] === undefined ? undefined : String(row[8]).trim(),
-                        bp3: row[9] === undefined ? undefined : String(row[9]).trim(),
-                        bp4: row[10] === undefined ? undefined : String(row[10]).trim(),
-                        bp5: row[11] === undefined ? undefined : String(row[11]).trim(),
-                        bp_goc: row[12] === undefined ? undefined : String(row[12]).trim(),
-                        company: row[13] === undefined ? undefined : String(row[13]).trim(),
-                        title: row[14] === undefined ? undefined : String(row[14]).trim(),
-                        joinDate: row[15] === undefined ? undefined : String(row[15]).trim(),
-                        leaveStatus: row[16] === undefined ? undefined : String(row[16]).trim(),
-                        leaveDate: row[17] === undefined ? undefined : String(row[17]).trim(),
-                        role: row[18] === undefined ? undefined : String(row[18]).trim()
+                        mnv: String(row[1]||'').trim(),
+                        name: row[2] === undefined ? undefined : String(row[2]).trim(),
+                        gender: row[3] === undefined ? undefined : String(row[3]).trim(),
+                        phone: row[4] === undefined ? undefined : String(row[4]).trim(),
+                        cccd: row[5] === undefined ? undefined : String(row[5]).trim(),
+                        email: row[6] === undefined ? undefined : String(row[6]).trim(),
+                        dv: row[7] === undefined ? undefined : String(row[7]).trim(),
+                        bp1: row[8] === undefined ? undefined : String(row[8]).trim(),
+                        bp2: row[9] === undefined ? undefined : String(row[9]).trim(),
+                        bp3: row[10] === undefined ? undefined : String(row[10]).trim(),
+                        bp4: row[11] === undefined ? undefined : String(row[11]).trim(),
+                        bp5: row[12] === undefined ? undefined : String(row[12]).trim(),
+                        bp_goc: row[13] === undefined ? undefined : String(row[13]).trim(),
+                        company: row[14] === undefined ? undefined : String(row[14]).trim(),
+                        title: row[15] === undefined ? undefined : String(row[15]).trim(),
+                        joinDate: row[16] === undefined ? undefined : String(row[16]).trim(),
+                        leaveStatus: row[17] === undefined ? undefined : String(row[17]).trim(),
+                        leaveDate: row[18] === undefined ? undefined : String(row[18]).trim(),
+                        role: row[19] === undefined ? undefined : String(row[19]).trim()
                     });
                 }
-                event.target.value = ""; if(empList.length === 0) return showToast("File không có dữ liệu nhân sự!", "danger");
-                enqueueTask({ action: 'bulk_save_employees', user: currentUser, data: empList }, "Đang lưu nhân sự...", async (res) => { if(res.success) { showToast(res.message, "success"); await reloadEmployeeData(); filterEmployees(); } else { showToast(res.message, "danger"); } });
-            } catch(err) { showToast("Lỗi định dạng file Excel!", "danger"); }
-        }; reader.readAsArrayBuffer(file);
+                event.target.value = ""; 
+                if(empList.length === 0) return showToast("File không có dữ liệu nhân sự hợp lệ!", "danger");
+                
+                enqueueTask({ action: 'bulk_save_employees', user: currentUser, data: empList }, "Đang lưu nhân sự...", async (res) => { 
+                    if(res.success) { 
+                        showToast(res.message, "success"); 
+                        await reloadEmployeeData(); 
+                        filterEmployees(); 
+                    } else { 
+                        showToast(res.message, "danger"); 
+                    } 
+                });
+            } catch(err) { 
+                showToast("Lỗi định dạng file Excel!", "danger"); 
+            }
+        }; 
+        reader.readAsArrayBuffer(file);
     }
 
     let inlineEditMode = false;
@@ -2685,18 +3052,79 @@
         else if (t === 'GUEST') { document.querySelectorAll('.emp-field-guest').forEach(el => el.classList.remove('d-none')); document.getElementById('mod-mnv').readOnly = true; document.getElementById('mod-mnv').value = "K_" + Math.floor(Math.random()*100000); }
     }
 
-    function saveEmployee() {
+function saveEmployee() {
         let isEdit = document.getElementById('emp-type-tabs').classList.contains('d-none'), t = currentEmpType;
-        let mnv = document.getElementById('mod-mnv').value, name = document.getElementById('mod-name').value, gender = document.getElementById('mod-gender').value, phone = document.getElementById('mod-phone').value, cccd = document.getElementById('mod-cccd').value, email = document.getElementById('mod-email').value, title = document.getElementById('mod-title').value, dv = document.getElementById('mod-dv').value, bp_goc = document.getElementById('mod-bp_goc').value, bp1 = document.getElementById('mod-bp1').value, bp2 = document.getElementById('mod-bp2').value, bp3 = document.getElementById('mod-bp3').value, bp4 = document.getElementById('mod-bp4').value, bp5 = document.getElementById('mod-bp5').value, company = document.getElementById('mod-company').value, joinDate = document.getElementById('mod-join').value, role = document.getElementById('mod-role').value, leaveStatus = document.getElementById('mod-leave').value, leaveDate = document.getElementById('mod-leave-date').value;
+        let mnv = document.getElementById('mod-mnv').value, 
+            nameRaw = document.getElementById('mod-name').value, 
+            gender = document.getElementById('mod-gender').value, 
+            phone = document.getElementById('mod-phone').value, 
+            cccd = document.getElementById('mod-cccd').value, 
+            email = document.getElementById('mod-email').value, 
+            title = document.getElementById('mod-title').value, 
+            dv = document.getElementById('mod-dv').value, 
+            bp_goc = document.getElementById('mod-bp_goc').value, 
+            bp1 = document.getElementById('mod-bp1').value, 
+            bp2 = document.getElementById('mod-bp2').value, 
+            bp3 = document.getElementById('mod-bp3').value, 
+            bp4 = document.getElementById('mod-bp4').value, 
+            bp5 = document.getElementById('mod-bp5').value, 
+            company = document.getElementById('mod-company').value, 
+            joinDate = document.getElementById('mod-join').value, 
+            role = document.getElementById('mod-role').value, 
+            leaveStatus = document.getElementById('mod-leave').value, 
+            leaveDate = document.getElementById('mod-leave-date').value;
         
-        if(!isEdit) {
-            if(t === 'CONG_TAC') { if(!phone) return showToast("Vui lòng nhập SĐT cho Nhân viên công tác!", "danger"); cccd = phone; bp2 = "Công tác"; role = "Nhan_Vien"; } 
-            else if (t === 'GUEST') { cccd = ""; bp2 = "Khách ngoài BIM"; role = ""; }
-        }
-        if(!mnv || !name) return showToast("Vui lòng nhập Mã NV và Họ tên", "danger");
+        if(!nameRaw) return showToast("Vui lòng nhập Họ tên", "danger");
 
-        empModal.hide();
-        enqueueTask({ action: 'save_employee', user: currentUser, data: { mnv, name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate } }, "Đang lưu nhân sự...", async (d) => { if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast(d.message, 'success'); } else { showToast(d.message, 'danger'); } });
+        // Tách chuỗi tên thành mảng dựa trên Enter (\n), dấu phẩy (,), hoặc chấm phẩy (;)
+        let names = nameRaw.split(/[\n,;]+/).map(n => n.trim()).filter(n => n !== "");
+        if(names.length === 0) return showToast("Vui lòng nhập Họ tên hợp lệ", "danger");
+
+        if(!isEdit) {
+            if(t === 'CONG_TAC') { 
+                if(!phone) return showToast("Vui lòng nhập SĐT cho Nhân viên công tác!", "danger"); 
+                cccd = phone; bp2 = "Công tác"; role = "Nhan_Vien"; 
+            } 
+            else if (t === 'GUEST') { 
+                cccd = ""; bp2 = "Khách ngoài BIM"; role = ""; 
+            }
+        }
+
+        // Trường hợp nhập 1 người bình thường
+        if(names.length === 1) {
+            let name = names[0];
+            // Render lại MNV cho khách để tránh trùng lặp nếu người dùng không sửa
+            if(!isEdit && t === 'GUEST') mnv = "K_" + Math.floor(Math.random()*1000000); 
+            if(!mnv) return showToast("Vui lòng nhập Mã NV", "danger");
+            
+            empModal.hide();
+            enqueueTask({ action: 'save_employee', user: currentUser, data: { mnv, name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate } }, "Đang lưu nhân sự...", async (d) => { 
+                if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast(d.message, 'success'); } 
+                else { showToast(d.message, 'danger'); } 
+            });
+        } 
+        // Trường hợp nhập nhiều người (Chỉ cho phép thêm mới & Khách ngoài)
+        else {
+            if (isEdit) return showToast("Không thể sửa thông tin nhiều người cùng lúc. Vui lòng chỉ nhập 1 tên!", "danger");
+            if (t !== 'GUEST') return showToast("Tính năng nhập nhiều người cùng lúc chỉ hỗ trợ Khách ngoài BIM!", "warning");
+            
+            // Tạo danh sách employee object với MNV ngẫu nhiên không trùng lặp
+            let empList = names.map(name => {
+                let uniqueMnv = "K_" + Math.floor(Math.random()*1000000) + "_" + Math.floor(Math.random()*1000); 
+                return { mnv: uniqueMnv, name: name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate };
+            });
+
+            empModal.hide();
+            // Tái sử dụng bulk_save_employees API để lưu hàng loạt
+            enqueueTask({ action: 'bulk_save_employees', user: currentUser, data: empList }, "Đang thêm danh sách khách...", async (d) => { 
+                if(d.success) { 
+                    await reloadEmployeeData(); 
+                    filterEmployees(); 
+                    showToast(`Đã thêm thành công ${empList.length} khách!`, 'success'); 
+                } 
+                else { showToast(d.message, 'danger'); } 
+            });
+        }
     }
 
     function toggleCheckAll(s) { document.querySelectorAll('#emp-table-body .emp-checkbox').forEach(c => { if(c.closest('tr').style.display !== 'none') c.checked = s.checked; }); }
