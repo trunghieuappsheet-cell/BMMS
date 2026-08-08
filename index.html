@@ -379,12 +379,21 @@
                                 <ul class="dropdown-menu shadow p-2" id="filter-bpgoc-unreg" onclick="event.stopPropagation()" style="min-width: 280px; max-height: 300px; overflow-y: auto;"></ul>
                             </div>
                             <div class="dropdown filter-item">
-                                <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start" type="button" data-bs-toggle="dropdown">Tình trạng</button>
+                                <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start" type="button" data-bs-toggle="dropdown">Tình trạng</button>					
                                 <ul class="dropdown-menu shadow p-2" id="filter-status-unreg" onclick="event.stopPropagation()">
                                     <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đang làm việc" checked onchange="renderUnregistered()"> Đang làm việc</label></li>
                                     <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đã nghỉ" onchange="renderUnregistered()"> Đã nghỉ</label></li>
                                 </ul>
                             </div>
+							<select id="unreg-group-by" class="fform-select form-select-sm border-dark fw-bold filter-item text-dark" onchange="renderUnregistered()" style="width: auto;">
+                                <option value="bp_goc">BP Chấm công</option>
+                                <option value="dv">Đơn vị</option>
+                                <option value="bp1">BP Cấp 1</option>
+                                <option value="dept_cap2" selected>BP Cấp 2</option>
+                                <option value="bp3">BP Cấp 3</option>
+                                <option value="bp4">BP Cấp 4</option>
+                                <option value="bp5">BP Cấp 5</option>
+                            </select>							
                         </div>
                         <div class="card shadow-sm mb-3 border-0 bg-white rounded">
                             <div class="card-body">
@@ -879,27 +888,29 @@
 <div class="modal fade" id="empModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-bim text-white"><h5 class="modal-title fw-bold">Thông tin Nhân Sự</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header bg-bim text-white">
+          <h5 class="modal-title fw-bold">Thông tin Nhân Sự</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
       <div class="modal-body">
         <ul class="nav nav-tabs fw-bold mb-3 d-none" id="emp-type-tabs">
             <li class="nav-item"><a class="nav-link active text-bim" href="#" onclick="changeEmpType('NORMAL', this); return false;">Nhân viên BIM</a></li>
             <li class="nav-item"><a class="nav-link text-muted" href="#" onclick="changeEmpType('CONG_TAC', this); return false;">Công tác</a></li>
             <li class="nav-item"><a class="nav-link text-muted" href="#" onclick="changeEmpType('GUEST', this); return false;">Khách ngoài</a></li>
         </ul>
+        
+        <!-- FORM DÀNH CHO NHÂN VIÊN BIM (NHẬP ĐƠN LẺ) -->
         <form id="emp-form">
             <div class="row g-3 align-items-center">
-                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">Mã NV (*)</label><input type="text" class="form-control border-primary" id="mod-mnv" required></div> 
-				<div class="col-md-4 emp-field emp-field-ct emp-field-guest">
-					<label class="fw-bold small">Họ tên (*)</label>
-					<textarea class="form-control border-primary" id="mod-name" rows="1" placeholder="Ngăn cách bằng Enter hoặc dấu phẩy..." required></textarea>
-				</div>				
-                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">SĐT (*)</label><input type="text" class="form-control border-primary" id="mod-phone"></div>
+                <div class="col-md-3 emp-field"><label class="fw-bold small">Mã NV (*)</label><input type="text" class="form-control border-primary" id="mod-mnv" required></div>
+                <div class="col-md-4 emp-field"><label class="fw-bold small">Họ tên (*)</label><input type="text" class="form-control border-primary" id="mod-name" required></div>
+                <div class="col-md-3 emp-field"><label class="fw-bold small">SĐT (*)</label><input type="text" class="form-control border-primary" id="mod-phone"></div>
                 <div class="col-md-2 emp-field"><label class="fw-bold small">Giới tính</label><input type="text" class="form-control border-primary" id="mod-gender" list="list-gender"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small">CCCD (Mật khẩu)</label><input type="text" class="form-control border-primary" id="mod-cccd"></div>
                 <div class="col-md-4 emp-field"><label class="fw-bold small">Email công ty</label><input type="text" class="form-control border-primary" id="mod-email"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small">Chức danh</label><input type="text" class="form-control border-primary" id="mod-title" list="list-title"></div>
                 
-                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small text-primary">Đơn vị / Công ty</label><input type="text" class="form-control border-primary" id="mod-company" list="list-company"></div>
+                <div class="col-md-3 emp-field"><label class="fw-bold small text-primary">Đơn vị / Công ty</label><input type="text" class="form-control border-primary" id="mod-company" list="list-company"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small text-primary">Khối/Phân ban (Cột H)</label><input type="text" class="form-control border-primary" id="mod-dv" list="list-dv"></div>
                 
                 <div class="col-md-3 emp-field"><label class="fw-bold small">BP Cấp 1</label><input type="text" class="form-control border-primary" id="mod-bp1" list="list-dept"></div>
@@ -907,7 +918,7 @@
                 <div class="col-md-3 emp-field"><label class="fw-bold small">Bộ phận Cấp 3</label><input type="text" class="form-control border-primary" id="mod-bp3" list="list-dept"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small">Bộ phận Cấp 4</label><input type="text" class="form-control border-primary" id="mod-bp4" list="list-dept"></div>
                 <div class="col-md-3 emp-field"><label class="fw-bold small">Bộ phận Cấp 5</label><input type="text" class="form-control border-primary" id="mod-bp5" list="list-dept"></div>
-                <div class="col-md-3 emp-field emp-field-ct"><label class="fw-bold small">BP Chấm công gốc</label><input type="text" class="form-control border-primary" id="mod-bp_goc" list="list-bpgoc"></div>
+                <div class="col-md-3 emp-field"><label class="fw-bold small">BP Chấm công gốc</label><input type="text" class="form-control border-primary" id="mod-bp_goc" list="list-bpgoc"></div>
                 
                 <div class="col-md-3 emp-field"><label class="fw-bold small text-success">Ngày gia nhập</label><input type="text" class="form-control border-secondary flatpickr-date" id="mod-join" placeholder="dd/mm/yyyy"></div>
                 
@@ -917,8 +928,35 @@
             </div>
             <div class="small text-muted mt-3 fst-italic">Lưu ý: Nếu nhập dữ liệu vào ô "Ngày nghỉ", tình trạng sẽ tự động chuyển thành "Đã nghỉ".</div>
         </form>
+
+        <!-- BẢNG DÀNH RIÊNG CHO CÔNG TÁC & KHÁCH (NHẬP HÀNG LOẠT) -->
+        <div id="emp-congtac-container" class="d-none">
+            <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                <table class="table table-bordered table-hover table-sm align-middle text-center text-nowrap mb-0">
+                    <thead class="table-light position-sticky top-0 z-1 shadow-sm">
+                        <tr>
+                            <th style="min-width: 120px;">Mã NV (*)</th>
+                            <th style="min-width: 200px;">Họ tên (*)</th>
+                            <th style="min-width: 120px;">SĐT (*)</th>
+                            <th style="min-width: 150px;">Công ty</th>
+                            <th style="min-width: 150px;">BP chấm công</th>
+                            <th style="width: 50px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="congtac-tbody"></tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button class="btn btn-sm btn-success fw-bold shadow-sm" onclick="addCongTacRow()"><i class="fa-solid fa-plus"></i> Thêm Dòng Nhập</button>
+                <span class="small text-muted fst-italic" id="ct-hint">Lưu ý: BP Cấp 2 sẽ được gán tự động là "Công tác". Mật khẩu là SĐT.</span>
+            </div>
+        </div>
+
       </div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button><button type="button" class="btn btn-bim fw-bold px-4 shadow" onclick="saveEmployee()">Lưu Dữ Liệu</button></div>
+      <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-bim fw-bold px-4 shadow" onclick="saveEmployee()">Lưu Dữ Liệu</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1846,7 +1884,7 @@
                 let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; let status = empObj.leaveStatus || 'Đang làm việc';
                 if (!sStatuses.includes(status)) return;
 
-                let deptMatch = (sDepts.length === 0) || sDepts.includes(row.bp1) || sDepts.includes(row.dept);
+                let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.dv) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2) || sDepts.includes(empObj.bp3) || sDepts.includes(empObj.bp4) || sDepts.includes(empObj.bp5);
                 let textMatch = (!sText) || removeAccents(row.mnv).includes(sText) || removeAccents(row.name).includes(sText);
                 let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(row.bp_goc);
                 
@@ -1897,7 +1935,7 @@
             let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; let status = empObj.leaveStatus || 'Đang làm việc';
             if (!sStatuses.includes(status)) return;
 
-            let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2);
+            let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.dv) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2) || sDepts.includes(empObj.bp3) || sDepts.includes(empObj.bp4) || sDepts.includes(empObj.bp5);
             let textMatch = (!sText) || removeAccents(row.mnv).includes(sText) || removeAccents(row.name).includes(sText);
             let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(empObj.bp_goc);
             
@@ -1991,11 +2029,11 @@ async function downloadExcelTemplate(mode = 'ro') {
                     });
                 }
                 
-                let filteredEmps = employeeData.filter(e => {
-                    return ((sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2)) 
-                        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
-                        && sStatuses.includes(e.leaveStatus);
-                });
+let filteredEmps = employeeData.filter(e => {
+    return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
+        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
+        && sStatuses.includes(e.leaveStatus);
+});
                 
                 let uniqueDepts = [...new Set(filteredEmps.map(e => e.dept_cap2 || e.bp1))].filter(Boolean);
                 let deptPath = uniqueDepts.length === 1 && sDepts.length === 1 ? uniqueDepts[0] : "Cơ sở Phú Quốc";
@@ -2162,11 +2200,11 @@ async function exportReportsExcel() {
             let wsSum = wb.getWorksheet('Tổng hợp') || wb.getWorksheet('Tổng Hợp');
             let wsDailyTemplate = wb.getWorksheet('dd.mm.yy'); 
             
-            let filteredEmps = employeeData.filter(e => {
-                return ((sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2)) 
-                    && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
-                    && sStatuses.includes(e.leaveStatus);
-            });
+let filteredEmps = employeeData.filter(e => {
+    return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
+        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
+        && sStatuses.includes(e.leaveStatus);
+});
             
             let realMap = {}, adjMap = {};
             dashboardData.forEach(r => realMap[`${r.mnv}_${r.date}`] = {...r});
@@ -2682,7 +2720,7 @@ async function exportReportsExcel() {
 
         employeeData.forEach(e => {
             let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText); 
-            let matchDept = (sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2);
+            let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
             
             if(!matchText || !matchDept || !matchBpGoc || !sStatuses.includes(e.leaveStatus)) return;
@@ -2749,7 +2787,7 @@ async function exportReportsExcel() {
 
         employeeData.forEach(e => {
             let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText); 
-            let matchDept = (sDepts.length === 0) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2);
+let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
             
             if(!matchText || !matchDept || !matchBpGoc || !sStatuses.includes(e.leaveStatus)) return;
@@ -2804,13 +2842,22 @@ async function exportReportsExcel() {
         }
     }
 
-    function renderUnregistered() {
+function renderUnregistered() {
         let dStrInput = document.getElementById('unreg-date').value; if(!dStrInput) return;
         let dStart, dEnd;
         if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } 
         else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
 
-        let sText = removeAccents(document.getElementById('unreg-search').value), sDepts = getCheckedTreeVals('unreg-dept-tree'), sStatuses = getCheckedStatuses('unreg'), sBpGoc = getCheckedBpGoc('unreg'), registeredMnvSet = new Set(), mealMapForDate = {};
+        let sText = removeAccents(document.getElementById('unreg-search').value), 
+            sDepts = getCheckedTreeVals('unreg-dept-tree'), 
+            sStatuses = getCheckedStatuses('unreg'), 
+            sBpGoc = getCheckedBpGoc('unreg'), 
+            registeredMnvSet = new Set(), 
+            mealMapForDate = {};
+
+        // ĐỌC GIÁ TRỊ TỪ DROPDOWN ĐỂ NHÓM BIỂU ĐỒ
+        let groupByField = document.getElementById('unreg-group-by') ? document.getElementById('unreg-group-by').value : 'dept_cap2';
+
         dashboardData.forEach(row => {
             let cleanDate = String(row.date).trim(); let rd; if(cleanDate.includes('/')) { let p = cleanDate.split('/'); rd = new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); } else { rd = new Date(cleanDate); }
             if (rd >= dStart && rd <= dEnd) { mealMapForDate[String(row.mnv).trim()] = row; if ((row.breakfast && row.breakfast !== '0') || (row.lunch && row.lunch !== '0') || (row.dinner && row.dinner !== '0') || (row.ot && row.ot !== '0')) registeredMnvSet.add(String(row.mnv).trim()); }
@@ -2819,9 +2866,11 @@ async function exportReportsExcel() {
         let totalCounts = {}, unregCounts = {}; unregDataCache = {}; 
         employeeData.forEach(emp => {
             if (!sStatuses.includes(emp.leaveStatus)) return; 
-            let matchDept = (sDepts.length === 0) || sDepts.includes(emp.bp1) || sDepts.includes(emp.dept_cap2);
+            let matchDept = (sDepts.length === 0) || sDepts.includes(emp.dv) || sDepts.includes(emp.bp1) || sDepts.includes(emp.dept_cap2) || sDepts.includes(emp.bp3) || sDepts.includes(emp.bp4) || sDepts.includes(emp.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(emp.bp_goc);
-            let dept = emp.dept_cap2 ? emp.dept_cap2 : (emp.bp1 ? emp.bp1 : 'Khác');
+            
+            // GÁN NHÓM THEO THUỘC TÍNH NGƯỜI DÙNG CHỌN
+            let dept = emp[groupByField] ? emp[groupByField] : 'Khác';
 
             if (matchDept && matchBpGoc) {
                 totalCounts[dept] = (totalCounts[dept] || 0) + 1;
@@ -2832,13 +2881,96 @@ async function exportReportsExcel() {
                 if (!registeredMnvSet.has(eMnv)) { unregCounts[dept] = (unregCounts[dept] || 0) + 1; if (matchSearch) unregDataCache[dept].unreg.push({ emp: emp, meal: null }); } 
                 else { if (matchSearch) unregDataCache[dept].reg.push({ emp: emp, meal: mealMapForDate[eMnv] }); }
             }
-        }); renderUnregChart(unregCounts, totalCounts);
+        }); 
+        
+        renderUnregChart(unregCounts, totalCounts);
     }
 
-    function renderUnregChart(unregCounts, totalCounts) {
-        let ctx = document.getElementById('unregChart').getContext('2d'); if (unregChartInstance) unregChartInstance.destroy();
-        let labels = Object.keys(totalCounts), registeredData = labels.map(l => (totalCounts[l] || 0) - (unregCounts[l] || 0)), unregData = labels.map(l => unregCounts[l] || 0);
-        unregChartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: 'Đã đăng ký', data: registeredData, backgroundColor: 'rgba(25, 135, 84, 0.9)', barPercentage: 0.6 }, { label: 'Chưa Đăng Ký', data: unregData, backgroundColor: 'rgba(220, 53, 69, 0.9)', barPercentage: 0.6 } ] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }, y: { stacked: true, ticks: { autoSkip: false } } }, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw; } } } }, onClick: (e, elements) => { if (elements.length > 0) { let index = elements[0].index; let dept = unregChartInstance.data.labels[index]; showUnregDetails(dept); } } } });
+function renderUnregChart(unregCounts, totalCounts) {
+        let canvas = document.getElementById('unregChart');
+        let ctx = canvas.getContext('2d'); 
+        if (unregChartInstance) unregChartInstance.destroy();
+        
+        let labels = Object.keys(totalCounts);
+        let registeredData = labels.map(l => (totalCounts[l] || 0) - (unregCounts[l] || 0));
+        let unregData = labels.map(l => unregCounts[l] || 0);
+
+        // HIỆU ỨNG HOLOGRAM: XANH BIM GROUP SÁNG (Emerald / Mint)
+        let gradReg = ctx.createLinearGradient(0, 0, 500, 0);
+        gradReg.addColorStop(0, 'rgba(0, 204, 136, 0.85)'); // Xanh BIM sáng
+        gradReg.addColorStop(1, 'rgba(0, 204, 136, 0.15)'); // Mờ dần ra xa
+
+        // MÀU CHƯA ĐĂNG KÝ (Hồng Neon)
+        let gradUnreg = ctx.createLinearGradient(0, 0, 500, 0);
+        gradUnreg.addColorStop(0, 'rgba(255, 0, 128, 0.85)'); 
+        gradUnreg.addColorStop(1, 'rgba(255, 0, 128, 0.15)'); 
+
+        unregChartInstance = new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: labels, 
+                datasets: [ 
+                    { 
+                        label: 'Đã đăng ký', 
+                        data: registeredData, 
+                        backgroundColor: gradReg, 
+                        borderColor: '#00cc88', // Viền xanh BIM sáng
+                        borderWidth: 1.5,
+                        borderRadius: 5, // Bo góc cho mềm mại
+                        barPercentage: 0.6,
+                        hoverBackgroundColor: 'rgba(0, 204, 136, 1)' // Đậm nét khi trỏ chuột vào
+                    }, 
+                    { 
+                        label: 'Chưa Đăng Ký', 
+                        data: unregData, 
+                        backgroundColor: gradUnreg, 
+                        borderColor: '#ff0080', // Viền Hồng Neon
+                        borderWidth: 1.5,
+                        borderRadius: 5,
+                        barPercentage: 0.6,
+                        hoverBackgroundColor: 'rgba(255, 0, 128, 1)'
+                    } 
+                ] 
+            }, 
+            options: { 
+                indexAxis: 'y', 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    x: { 
+                        stacked: true, 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1, precision: 0 },
+                        grid: { color: 'rgba(0, 0, 0, 0.04)' } // Làm mờ lưới nền để nổi biểu đồ
+                    }, 
+                    y: { 
+                        stacked: true, 
+                        ticks: { autoSkip: false, font: { weight: '600' } },
+                        grid: { display: false } // Ẩn lưới ngang cho thoáng
+                    } 
+                }, 
+                plugins: { 
+                    legend: { display: true, position: 'bottom' }, 
+                    tooltip: { 
+                        // Tooltip phong cách kính tối màu (Glassmorphism)
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#00cc88', // Chữ tooltip đổi theo màu viền
+                        borderColor: 'rgba(255, 255, 255, 0.15)',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw; } } 
+                    } 
+                }, 
+                onClick: (e, elements) => { 
+                    if (elements.length > 0) { 
+                        let index = elements[0].index; 
+                        let dept = unregChartInstance.data.labels[index]; 
+                        showUnregDetails(dept); 
+                    } 
+                } 
+            } 
+        });
     }
 
     function showUnregDetails(dept) {
@@ -3012,7 +3144,7 @@ async function exportEmployeesExcel() {
         let sText = removeAccents(document.getElementById('emp-search').value), sRole = document.getElementById('emp-role-filter').value, sDepts = getCheckedTreeVals('emp-dept-tree'), sStatuses = getCheckedStatuses('emp'), sBpGoc = getCheckedBpGoc('emp');
         let filtered = employeeData.filter(emp => {
             let matchRole = (sRole === '') || (sRole === 'EMPTY' && !emp.role) || (emp.role === sRole);
-            let matchDept = (sDepts.length === 0) || sDepts.includes(emp.bp1) || sDepts.includes(emp.dept_cap2);
+            let matchDept = (sDepts.length === 0) || sDepts.includes(emp.dv) || sDepts.includes(emp.bp1) || sDepts.includes(emp.dept_cap2) || sDepts.includes(emp.bp3) || sDepts.includes(emp.bp4) || sDepts.includes(emp.bp5);
             let matchText = (!sText) || removeAccents(emp.mnv).includes(sText) || removeAccents(emp.name).includes(sText);
             let matchStatus = sStatuses.includes(emp.leaveStatus || 'Đang làm việc');
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(emp.bp_goc);
@@ -3040,31 +3172,160 @@ async function exportEmployeesExcel() {
         });
     }
 
-    let empModal;
+let empModal;
+    
+    function addCongTacRow() {
+        let isGuest = currentEmpType === 'GUEST';
+        let mnvHtml = isGuest ? 
+            `<input type="text" class="form-control form-control-sm ct-mnv border-primary bg-light" value="K_${Math.floor(Math.random()*1000000)}" readonly>` : 
+            `<input type="text" class="form-control form-control-sm ct-mnv border-primary" placeholder="Nhập mã NV...">`;
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${mnvHtml}</td>
+            <td><input type="text" class="form-control form-control-sm ct-name border-primary" placeholder="Họ và tên"></td>
+            <td><input type="text" class="form-control form-control-sm ct-phone border-primary" placeholder="09xxxx"></td>
+            <td><input type="text" class="form-control form-control-sm ct-company" list="list-company" placeholder="Công ty"></td>
+            <td><input type="text" class="form-control form-control-sm ct-bpgoc" list="list-bpgoc" placeholder="BP Chấm công"></td>
+            <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('tr').remove()" title="Xóa"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        document.getElementById('congtac-tbody').appendChild(tr);
+    }
+
     function openEmpModal(emp = null) {
         if(!empModal) empModal = new bootstrap.Modal(document.getElementById('empModal'));
         let typeTabsWrap = document.getElementById('emp-type-tabs');
+        
         if (emp) {
-            typeTabsWrap.classList.add('d-none'); document.querySelectorAll('.emp-field').forEach(el => el.classList.remove('d-none'));
-            document.getElementById('mod-mnv').value = emp.mnv; document.getElementById('mod-name').value = emp.name; document.getElementById('mod-gender').value = emp.gender; document.getElementById('mod-phone').value = emp.phone; document.getElementById('mod-cccd').value = emp.cccd; document.getElementById('mod-email').value = emp.email; document.getElementById('mod-title').value = emp.title; document.getElementById('mod-dv').value = emp.dv; document.getElementById('mod-bp_goc').value = emp.bp_goc; document.getElementById('mod-bp1').value = emp.bp1; document.getElementById('mod-bp2').value = emp.dept_cap2; document.getElementById('mod-bp3').value = emp.bp3 || ''; document.getElementById('mod-bp4').value = emp.bp4 || ''; document.getElementById('mod-bp5').value = emp.bp5 || ''; document.getElementById('mod-company').value = emp.company || ''; document.getElementById('mod-join').value = emp.joinDate ? parseDateToInput(emp.joinDate) : ''; document.getElementById('mod-role').value = emp.role || ''; document.getElementById('mod-leave').value = emp.leaveStatus || 'Đang làm việc'; document.getElementById('mod-leave-date').value = emp.leaveDate ? parseDateToInput(emp.leaveDate) : ''; document.getElementById('mod-mnv').readOnly = true;
+            typeTabsWrap.classList.add('d-none'); 
+            document.getElementById('emp-form').classList.remove('d-none');
+            
+            let ctContainer = document.getElementById('emp-congtac-container');
+            if(ctContainer) ctContainer.classList.add('d-none');
+            
+            document.querySelectorAll('.emp-field').forEach(el => el.classList.remove('d-none'));
+            document.getElementById('mod-mnv').value = emp.mnv; 
+            document.getElementById('mod-name').value = emp.name; 
+            document.getElementById('mod-gender').value = emp.gender; 
+            document.getElementById('mod-phone').value = emp.phone; 
+            document.getElementById('mod-cccd').value = emp.cccd; 
+            document.getElementById('mod-email').value = emp.email; 
+            document.getElementById('mod-title').value = emp.title; 
+            document.getElementById('mod-dv').value = emp.dv; 
+            document.getElementById('mod-bp_goc').value = emp.bp_goc; 
+            document.getElementById('mod-bp1').value = emp.bp1; 
+            document.getElementById('mod-bp2').value = emp.dept_cap2; 
+            document.getElementById('mod-bp3').value = emp.bp3 || ''; 
+            document.getElementById('mod-bp4').value = emp.bp4 || ''; 
+            document.getElementById('mod-bp5').value = emp.bp5 || ''; 
+            document.getElementById('mod-company').value = emp.company || ''; 
+            document.getElementById('mod-join').value = emp.joinDate ? parseDateToInput(emp.joinDate) : ''; 
+            document.getElementById('mod-role').value = emp.role || ''; 
+            document.getElementById('mod-leave').value = emp.leaveStatus || 'Đang làm việc'; 
+            document.getElementById('mod-leave-date').value = emp.leaveDate ? parseDateToInput(emp.leaveDate) : ''; 
+            document.getElementById('mod-mnv').readOnly = true;
         } else {
-            typeTabsWrap.classList.remove('d-none'); changeEmpType('NORMAL', typeTabsWrap.querySelector('.nav-link'));
-            document.getElementById('mod-name').value = ''; document.getElementById('mod-gender').value = ''; document.getElementById('mod-phone').value = ''; document.getElementById('mod-cccd').value = ''; document.getElementById('mod-email').value = ''; document.getElementById('mod-title').value = ''; document.getElementById('mod-dv').value = ''; document.getElementById('mod-bp_goc').value = ''; document.getElementById('mod-bp1').value = ''; document.getElementById('mod-bp2').value = ''; document.getElementById('mod-bp3').value = ''; document.getElementById('mod-bp4').value = ''; document.getElementById('mod-bp5').value = ''; document.getElementById('mod-company').value = ''; document.getElementById('mod-join').value = ''; document.getElementById('mod-role').value = ''; document.getElementById('mod-leave').value = 'Đang làm việc'; document.getElementById('mod-leave-date').value = '';
-        } empModal.show();
+            typeTabsWrap.classList.remove('d-none'); 
+            changeEmpType('NORMAL', typeTabsWrap.querySelector('.nav-link'));
+        } 
+        empModal.show();
     }
 
     function changeEmpType(t, el) {
-        if(el) { document.querySelectorAll('#emp-type-tabs .nav-link').forEach(link => link.classList.remove('active', 'text-bim')); el.classList.add('active', 'text-bim'); }
-        currentEmpType = t; document.querySelectorAll('.emp-field').forEach(el => el.classList.add('d-none'));
-        if(t === 'NORMAL') { document.querySelectorAll('.emp-field').forEach(el => el.classList.remove('d-none')); document.getElementById('mod-mnv').readOnly = false; document.getElementById('mod-mnv').value = ""; document.getElementById('mod-mnv').placeholder = "VD: BIM0123"; } 
-        else if (t === 'CONG_TAC') { document.querySelectorAll('.emp-field-ct').forEach(el => el.classList.remove('d-none')); document.getElementById('mod-mnv').readOnly = false; document.getElementById('mod-mnv').value = ""; document.getElementById('mod-mnv').placeholder = "Nhập Mã NV..."; } 
-        else if (t === 'GUEST') { document.querySelectorAll('.emp-field-guest').forEach(el => el.classList.remove('d-none')); document.getElementById('mod-mnv').readOnly = true; document.getElementById('mod-mnv').value = "K_" + Math.floor(Math.random()*100000); }
+        if(el) { 
+            document.querySelectorAll('#emp-type-tabs .nav-link').forEach(link => link.classList.remove('active', 'text-bim')); 
+            el.classList.add('active', 'text-bim'); 
+        }
+        currentEmpType = t; 
+        
+        if (t === 'CONG_TAC' || t === 'GUEST') {
+            document.getElementById('emp-form').classList.add('d-none');
+            document.getElementById('emp-congtac-container').classList.remove('d-none');
+            document.getElementById('congtac-tbody').innerHTML = ''; 
+            
+            if (t === 'GUEST') {
+                document.getElementById('ct-hint').innerText = 'Lưu ý: BP Cấp 2 sẽ được gán là "Khách ngoài BIM". Mã NV tự động tạo.';
+            } else {
+                document.getElementById('ct-hint').innerText = 'Lưu ý: BP Cấp 2 sẽ được gán là "Công tác". Mật khẩu là SĐT.';
+            }
+            addCongTacRow(); 
+        } else {
+            document.getElementById('emp-form').classList.remove('d-none');
+            document.getElementById('emp-congtac-container').classList.add('d-none');
+            document.querySelectorAll('.emp-field').forEach(el => el.classList.remove('d-none'));
+            
+            document.getElementById('mod-mnv').readOnly = false; 
+            document.getElementById('mod-mnv').value = ""; 
+            document.getElementById('mod-mnv').placeholder = "VD: BIM0123"; 
+            document.getElementById('mod-name').value = ''; 
+            document.getElementById('mod-gender').value = ''; 
+            document.getElementById('mod-phone').value = ''; 
+            document.getElementById('mod-cccd').value = ''; 
+            document.getElementById('mod-email').value = ''; 
+            document.getElementById('mod-title').value = ''; 
+            document.getElementById('mod-dv').value = ''; 
+            document.getElementById('mod-bp_goc').value = ''; 
+            document.getElementById('mod-bp1').value = ''; 
+            document.getElementById('mod-bp2').value = ''; 
+            document.getElementById('mod-bp3').value = ''; 
+            document.getElementById('mod-bp4').value = ''; 
+            document.getElementById('mod-bp5').value = ''; 
+            document.getElementById('mod-company').value = ''; 
+            document.getElementById('mod-join').value = ''; 
+            document.getElementById('mod-role').value = ''; 
+            document.getElementById('mod-leave').value = 'Đang làm việc'; 
+            document.getElementById('mod-leave-date').value = '';
+        }
     }
 
-function saveEmployee() {
+    function saveEmployee() {
         let isEdit = document.getElementById('emp-type-tabs').classList.contains('d-none'), t = currentEmpType;
+        
+        if (!isEdit && (t === 'CONG_TAC' || t === 'GUEST')) {
+            let rows = document.querySelectorAll('#congtac-tbody tr');
+            let empList = [];
+            let hasError = false;
+            
+            rows.forEach((tr, index) => {
+                let mnv = tr.querySelector('.ct-mnv').value.trim();
+                let name = tr.querySelector('.ct-name').value.trim();
+                let phone = tr.querySelector('.ct-phone').value.trim();
+                let company = tr.querySelector('.ct-company').value.trim();
+                let bp_goc = tr.querySelector('.ct-bpgoc').value.trim();
+                
+                if (!mnv || !name || (!phone && t === 'CONG_TAC')) {
+                    showToast(`Vui lòng nhập đủ Mã NV, Họ tên và SĐT ở dòng ${index + 1}!`, "danger");
+                    hasError = true;
+                    return;
+                }
+                
+                let bp2 = t === 'GUEST' ? "Khách ngoài BIM" : "Công tác";
+                let role = t === 'GUEST' ? "" : "Nhan_Vien";
+                let cccd = t === 'GUEST' ? "" : phone;
+
+                empList.push({
+                    mnv: mnv, name: name, gender: '', phone: phone, cccd: cccd, email: '', title: '', dv: '', bp_goc: bp_goc, bp1: '', bp2: bp2, bp3: '', bp4: '', bp5: '', company: company, joinDate: toDDMMYYYY(new Date()), role: role, leaveStatus: 'Đang làm việc', leaveDate: ''
+                });
+            });
+            
+            if (hasError) return;
+            if (empList.length === 0) return showToast("Vui lòng thêm ít nhất 1 dòng dữ liệu!", "warning");
+
+            empModal.hide();
+            enqueueTask({ action: 'bulk_save_employees', user: currentUser, data: empList }, "Đang thêm nhân sự...", async (d) => { 
+                if(d.success) { 
+                    await reloadEmployeeData(); 
+                    filterEmployees(); 
+                    showToast(`Đã thêm thành công ${empList.length} người!`, 'success'); 
+                } else { 
+                    showToast(d.message, 'danger'); 
+                } 
+            });
+            return;
+        }
+
         let mnv = document.getElementById('mod-mnv').value, 
-            nameRaw = document.getElementById('mod-name').value, 
+            name = document.getElementById('mod-name').value.trim(), 
             gender = document.getElementById('mod-gender').value, 
             phone = document.getElementById('mod-phone').value, 
             cccd = document.getElementById('mod-cccd').value, 
@@ -3083,65 +3344,29 @@ function saveEmployee() {
             leaveStatus = document.getElementById('mod-leave').value, 
             leaveDate = document.getElementById('mod-leave-date').value;
         
-        if(!nameRaw) return showToast("Vui lòng nhập Họ tên", "danger");
+        if(!name || !mnv) return showToast("Vui lòng nhập Mã NV và Họ tên", "danger");
 
-        // Tách chuỗi tên thành mảng dựa trên Enter (\n), dấu phẩy (,), hoặc chấm phẩy (;)
-        let names = nameRaw.split(/[\n,;]+/).map(n => n.trim()).filter(n => n !== "");
-        if(names.length === 0) return showToast("Vui lòng nhập Họ tên hợp lệ", "danger");
-
-        if(!isEdit) {
-            if(t === 'CONG_TAC') { 
-                if(!phone) return showToast("Vui lòng nhập SĐT cho Nhân viên công tác!", "danger"); 
-                cccd = phone; bp2 = "Công tác"; role = "Nhan_Vien"; 
-            } 
-            else if (t === 'GUEST') { 
-                cccd = ""; bp2 = "Khách ngoài BIM"; role = ""; 
-            }
-        }
-
-        // Trường hợp nhập 1 người bình thường
-        if(names.length === 1) {
-            let name = names[0];
-            // Render lại MNV cho khách để tránh trùng lặp nếu người dùng không sửa
-            if(!isEdit && t === 'GUEST') mnv = "K_" + Math.floor(Math.random()*1000000); 
-            if(!mnv) return showToast("Vui lòng nhập Mã NV", "danger");
-            
-            empModal.hide();
-            enqueueTask({ action: 'save_employee', user: currentUser, data: { mnv, name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate } }, "Đang lưu nhân sự...", async (d) => { 
-                if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast(d.message, 'success'); } 
-                else { showToast(d.message, 'danger'); } 
-            });
-        } 
-        // Trường hợp nhập nhiều người (Chỉ cho phép thêm mới & Khách ngoài)
-        else {
-            if (isEdit) return showToast("Không thể sửa thông tin nhiều người cùng lúc. Vui lòng chỉ nhập 1 tên!", "danger");
-            if (t !== 'GUEST') return showToast("Tính năng nhập nhiều người cùng lúc chỉ hỗ trợ Khách ngoài BIM!", "warning");
-            
-            // Tạo danh sách employee object với MNV ngẫu nhiên không trùng lặp
-            let empList = names.map(name => {
-                let uniqueMnv = "K_" + Math.floor(Math.random()*1000000) + "_" + Math.floor(Math.random()*1000); 
-                return { mnv: uniqueMnv, name: name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate };
-            });
-
-            empModal.hide();
-            // Tái sử dụng bulk_save_employees API để lưu hàng loạt
-            enqueueTask({ action: 'bulk_save_employees', user: currentUser, data: empList }, "Đang thêm danh sách khách...", async (d) => { 
-                if(d.success) { 
-                    await reloadEmployeeData(); 
-                    filterEmployees(); 
-                    showToast(`Đã thêm thành công ${empList.length} khách!`, 'success'); 
-                } 
-                else { showToast(d.message, 'danger'); } 
-            });
-        }
+        empModal.hide();
+        enqueueTask({ action: 'save_employee', user: currentUser, data: { mnv, name, gender, phone, cccd, email, title, dv, bp_goc, bp1, bp2, bp3, bp4, bp5, company, joinDate, role, leaveStatus, leaveDate } }, "Đang lưu nhân sự...", async (d) => { 
+            if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast(d.message, 'success'); } 
+            else { showToast(d.message, 'danger'); } 
+        });
     }
 
-    function toggleCheckAll(s) { document.querySelectorAll('#emp-table-body .emp-checkbox').forEach(c => { if(c.closest('tr').style.display !== 'none') c.checked = s.checked; }); }
+    function toggleCheckAll(s) { 
+        document.querySelectorAll('#emp-table-body .emp-checkbox').forEach(c => { 
+            if(c.closest('tr').style.display !== 'none') c.checked = s.checked; 
+        }); 
+    }
     
     function applyBulkRole() {
-        const role = document.getElementById('bulk-role-select').value; if(!role) return alert("Vui lòng chọn 1 quyền để cấp!");
-        let mnvList = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(c => c.value); if(mnvList.length === 0) return alert("Chọn ít nhất 1 Nhân viên bên dưới!");
-        enqueueTask({action: 'bulk_update_role', user: currentUser, newRole: role, mnvList: mnvList}, "Đang phân quyền...", async (d) => { if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast('Cập nhật quyền thành công', 'success'); } });
+        const role = document.getElementById('bulk-role-select').value; 
+        if(!role) return alert("Vui lòng chọn 1 quyền để cấp!");
+        let mnvList = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(c => c.value); 
+        if(mnvList.length === 0) return alert("Chọn ít nhất 1 Nhân viên bên dưới!");
+        enqueueTask({action: 'bulk_update_role', user: currentUser, newRole: role, mnvList: mnvList}, "Đang phân quyền...", async (d) => { 
+            if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast('Cập nhật quyền thành công', 'success'); } 
+        });
     }
 </script>
 </body>
