@@ -2200,7 +2200,7 @@ async function exportReportsExcel() {
 
             datesToExport.forEach(dStr => {
                 let parts = dStr.split('/');
-                let dayDisp = `${parts[0]}/${parts[1]}`; 
+                let dayDisp = `${parts[0]}/${parts[1]}`; // dd/mm
                 
                 let r_btS=0, r_btTr=0, r_btTo=0, r_hyS=0, r_hyTr=0, r_hyTo=0, r_ot=0;
                 let a_btS=0, a_btTr=0, a_btTo=0, a_hyS=0, a_hyTr=0, a_hyTo=0, a_ot=0;
@@ -2233,9 +2233,9 @@ async function exportReportsExcel() {
                     let dVals = [a_btS - r_btS, a_btTr - r_btTr, a_btTo - r_btTo, a_hyS - r_hyS, a_hyTr - r_hyTr, a_hyTo - r_hyTo, a_ot - r_ot];
 
                     if (wsReal) {
-                        // Cột A-H (1-8) ghi Thực tế
+                        // Cột 1-8 ghi Thực tế
                         rVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 1).value = v; });
-                        // Cột K-Q (11-17) ghi Chênh Lệch hàng ngày
+                        // Cột K-Q (11-17) ghi Chênh Lệch
                         dVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 11).value = v; });
                     }
                     if (wsAdj) {
@@ -2261,22 +2261,26 @@ async function exportReportsExcel() {
             
             // Ghi TỔNG và TIỀN CHỈ GÁN VALUE (Bảo toàn định dạng)
             if (wsReal) {
+                // Bảng Thực tế bên trái
                 realColSums.forEach((v, i) => { wsReal.getCell(35, i + 2).value = v; });
                 
                 let realMoney = [realColSums[0]*p.bf, realColSums[1]*p.lu, realColSums[2]*p.di, realColSums[3]*p.bf, realColSums[4]*p.lu, realColSums[5]*p.di, realColSums[6]*p.ot];
                 realMoney.forEach((v, i) => { wsReal.getCell(37, i + 2).value = v; });
                 
-                // ĐÃ SỬA: Ghi Chênh Lệch vào đúng bảng TỔNG DƯ (Cột B-H, tức là i + 2)
+                // Bảng TỔNG DƯ bên dưới
                 diffColSums.forEach((v, i) => { wsReal.getCell(41, i + 2).value = v; });
                 
                 let diffMoney = [diffColSums[0]*p.bf, diffColSums[1]*p.lu, diffColSums[2]*p.di, diffColSums[3]*p.bf, diffColSums[4]*p.lu, diffColSums[5]*p.di, diffColSums[6]*p.ot];
                 diffMoney.forEach((v, i) => { wsReal.getCell(43, i + 2).value = v; });
 
-                // Dòng 45: Tổng chênh lệch Sáng (B), Trưa (D), Tối (F), Tăng Ca (H)
                 wsReal.getCell(45, 2).value = diffColSums[0] + diffColSums[3]; 
                 wsReal.getCell(45, 4).value = diffColSums[1] + diffColSums[4]; 
                 wsReal.getCell(45, 6).value = diffColSums[2] + diffColSums[5]; 
                 wsReal.getCell(45, 8).value = diffColSums[6];                  
+
+                // THÊM: Bảng Chênh lệch bên phải (Cột K-Q, dòng 35, 37)
+                diffColSums.forEach((v, i) => { wsReal.getCell(35, i + 11).value = v; });
+                diffMoney.forEach((v, i) => { wsReal.getCell(37, i + 11).value = v; });
             }
 
             if (wsAdj) {
