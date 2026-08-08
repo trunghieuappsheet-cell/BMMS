@@ -2172,18 +2172,20 @@ async function exportReportsExcel() {
             dashboardData.forEach(r => realMap[`${r.mnv}_${r.date}`] = {...r});
             hcData.forEach(r => adjMap[`${r.mnv}_${r.date}`] = {...r});
 
-            // CHỈ LẤY NHÂN VIÊN CÓ PHÁT SINH ĐĂNG KÝ ĂN
+            // FIX LỖI "LÚC CÓ LÚC KHÔNG": LUÔN QUÉT CẢ THỰC TẾ & HIỆU CHỈNH ĐỂ KHÔNG BỎ SÓT NHÂN VIÊN
             let activeEmps = filteredEmps.filter(e => {
                 let hasMeal = false;
                 datesToExport.forEach(dStr => {
                     let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
                     let mAdj = adjMap[`${e.mnv}_${dStr}`];
-                    let fData = isAdjMode ? {
-                        bf: mAdj ? mAdj.breakfast : mReal.breakfast, lu: mAdj ? mAdj.lunch : mReal.lunch,
-                        di: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot
-                    } : { bf: mReal.breakfast, lu: mReal.lunch, di: mReal.dinner, ot: mReal.ot };
+                    
+                    let a_bf = mAdj ? mAdj.breakfast : mReal.breakfast;
+                    let a_lu = mAdj ? mAdj.lunch : mReal.lunch;
+                    let a_di = mAdj ? mAdj.dinner : mReal.dinner;
+                    let a_ot = mAdj ? mAdj.ot : mReal.ot;
 
-                    if (fData.bf !== '0' || fData.lu !== '0' || fData.di !== '0' || fData.ot !== '0') {
+                    if (mReal.breakfast !== '0' || mReal.lunch !== '0' || mReal.dinner !== '0' || mReal.ot !== '0' ||
+                        a_bf !== '0' || a_lu !== '0' || a_di !== '0' || a_ot !== '0') {
                         hasMeal = true;
                     }
                 });
@@ -2209,13 +2211,11 @@ async function exportReportsExcel() {
                     let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
                     let mAdj = adjMap[`${e.mnv}_${dStr}`];
 
-                    // Gom số Thực tế
                     if(mReal.breakfast === 'X') r_btS++; else if(mReal.breakfast === 'Y') r_hyS++;
                     if(mReal.lunch === 'X') r_btTr++; else if(mReal.lunch === 'Y') r_hyTr++;
                     if(mReal.dinner === 'X') r_btTo++; else if(mReal.dinner === 'Y') r_hyTo++;
                     if(mReal.ot === 'X' || mReal.ot === 'Y') r_ot++;
 
-                    // Gom số Hiệu chỉnh
                     let a_bf = mAdj ? mAdj.breakfast : mReal.breakfast;
                     let a_lu = mAdj ? mAdj.lunch : mReal.lunch;
                     let a_di = mAdj ? mAdj.dinner : mReal.dinner;
@@ -2234,6 +2234,9 @@ async function exportReportsExcel() {
 
                     if (wsReal) {
                         rVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 1).value = v; });
+                        
+                        // Bổ sung ghi Cột J (Ngày) cho bảng Chênh lệch
+                        wsReal.getCell(rIdxAgg, 10).value = dayDisp; 
                         dVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 11).value = v; });
                     }
                     if (wsAdj) {
@@ -2257,9 +2260,8 @@ async function exportReportsExcel() {
 
             let p = appSettings.mealPrices || { bf: 0, lu: 0, di: 0, ot: 0 };
             
-            // Ghi TỔNG và TIỀN CHỈ GÁN VALUE VÀ XÓA BỎ CÔNG THỨC (Tránh Excel tự tính đè lại thành 0)
+            // GHI TỔNG, TIỀN VÀ XÓA CÔNG THỨC
             if (wsReal) {
-                // Bảng Thực tế bên trái
                 realColSums.forEach((v, i) => { 
                     let c = wsReal.getCell(35, i + 2); c.value = v; delete c.formula; 
                 });
@@ -2269,7 +2271,6 @@ async function exportReportsExcel() {
                     let c = wsReal.getCell(37, i + 2); c.value = v; delete c.formula; 
                 });
                 
-                // Bảng TỔNG DƯ bên dưới
                 diffColSums.forEach((v, i) => { 
                     let c = wsReal.getCell(41, i + 2); c.value = v; delete c.formula; 
                 });
@@ -2279,13 +2280,11 @@ async function exportReportsExcel() {
                     let c = wsReal.getCell(43, i + 2); c.value = v; delete c.formula; 
                 });
 
-                // Dòng 45: Tổng chênh lệch Sáng (B), Trưa (D), Tối (F), Tăng Ca (H)
                 let c45_B = wsReal.getCell(45, 2); c45_B.value = diffColSums[0] + diffColSums[3]; delete c45_B.formula;
                 let c45_D = wsReal.getCell(45, 4); c45_D.value = diffColSums[1] + diffColSums[4]; delete c45_D.formula;
                 let c45_F = wsReal.getCell(45, 6); c45_F.value = diffColSums[2] + diffColSums[5]; delete c45_F.formula;
                 let c45_H = wsReal.getCell(45, 8); c45_H.value = diffColSums[6];                  delete c45_H.formula;
 
-                // THÊM: Bảng Chênh lệch bên phải (Cột K-Q, dòng 35, 37)
                 diffColSums.forEach((v, i) => { 
                     let c = wsReal.getCell(35, i + 11); c.value = v; delete c.formula; 
                 });
