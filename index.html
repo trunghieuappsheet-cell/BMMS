@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:title" content="BIM MEAL MANAGEMENT">
     <meta property="og:description" content="Phần mềm đăng ký suất ăn">
     <meta property="og:image" content="https://bmms.hama.io.vn/logo.png">
@@ -223,7 +223,7 @@
                         <div class="tab-content">
                             <!-- CHẾ ĐỘ LỊCH -->
                             <div class="tab-pane fade show active" id="mode-vcal">
-								<div class="d-flex align-items-center gap-3 mb-3 bg-light p-2 rounded border shadow-sm w-100 justify-content-center position-relative">
+								<div class="d-flex align-items-center gap-3 mb-3 bg-light p-2 rounded border shadow-sm w-100 justify-content-center position-relative flex-wrap">
 									<button class="btn btn-outline-secondary fw-bold bg-white btn-sm" onclick="changeRegCycle(-1)"><i class="fa-solid fa-chevron-left"></i> TRƯỚC</button>
 									<h5 class="m-0 fw-bold text-bim px-2 px-md-4 fs-6 fs-md-5" id="vcal-cycle-title">Kỳ: ...</h5>
 									<button class="btn btn-outline-secondary fw-bold bg-white btn-sm" onclick="changeRegCycle(1)">TỚI <i class="fa-solid fa-chevron-right"></i></button>
@@ -277,7 +277,7 @@
                                         <button class="btn btn-sm btn-outline-secondary rounded-start-0 border-secondary px-2" onclick="changeDateStep('mc', 1)"><i class="fa-solid fa-chevron-right"></i></button>
                                     </div>
                                     
-								<div class="ms-auto d-flex gap-2">
+								<div class="ms-auto d-flex gap-2 flex-wrap">
 									<button class="btn fw-bold shadow-sm btn-sm px-2 text-nowrap" style="background-color: #ff9800; border: 2px solid #e68a00; color: white;" onclick="openMealCostModal()" title="Chi tiết tiền ăn">
 										<i class="fa-solid fa-file-invoice-dollar text-white"></i>
 									</button>
@@ -437,7 +437,7 @@
 
                     <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('rep')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
                     
-                    <div class="ms-auto d-flex gap-2">
+                    <div class="ms-auto d-flex gap-2 flex-wrap">
                         <select id="rep-export-type" class="form-select form-select-sm border-success fw-bold filter-item text-success" style="width: auto;">
                             <option value="DETAIL">Bản chi tiết</option>
                             <option value="COMPACT">Bản gọn</option>
@@ -487,6 +487,10 @@
                         </ul>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('dash')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
+                    
+                    <div class="ms-auto d-flex gap-2 flex-wrap">
+                        <button class="btn btn-outline-success btn-sm fw-bold filter-item shadow-sm" onclick="openPrintExportModal()"><i class="fa-solid fa-print"></i> Xuất / In nhanh</button>
+                    </div>
                 </div>                
                 <div class="row text-center mb-3 g-3">
                     <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #0d6efd;"><i class="fa-solid fa-mug-saucer"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG SÁNG</h6><div class="dash-stat" id="dash-sang">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="dash-sang-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="dash-sang-hy" class="fs-5">0</span></span></div></div></div>
@@ -548,8 +552,7 @@
                     </table>
                 </div>
             </div>
-
-            <!-- TAB 5: QUẢN LÝ NHÂN SỰ -->
+<!-- TAB 5: QUẢN LÝ NHÂN SỰ -->
             <div id="view-employees" class="page-view d-none">
                 <div class="toolbar-filter">
                     <input type="text" id="emp-search" class="form-control form-control-sm border-primary filter-item search-input" placeholder="Tìm tên, mã NV..." onkeyup="debounceSearch(filterEmployees, 100)">
@@ -737,12 +740,15 @@
                                     </div>
                                     <div class="col-md-12">
                                         <label class="fw-bold small text-danger">3. Tính năng được phép (Ghi đè mặc định):</label>
-                                        <div class="border bg-white p-2 rounded shadow-sm">
-                                            <label class="d-inline-block me-3"><input type="checkbox" class="perm-feat-cb form-check-input" value="reg_others"> Đăng ký hộ</label>
-                                            <label class="d-inline-block me-3"><input type="checkbox" class="perm-feat-cb form-check-input" value="unreg"> Chưa đăng ký</label>
-                                            <label class="d-inline-block me-3"><input type="checkbox" class="perm-feat-cb form-check-input" value="dash"> Dashboard</label>
-                                            <label class="d-inline-block me-3"><input type="checkbox" class="perm-feat-cb form-check-input" value="emp"> Nhân sự</label>
-                                            <label class="d-inline-block me-3"><input type="checkbox" class="perm-feat-cb form-check-input" value="settings"> Thiết lập</label>
+                                        <div class="border bg-white p-2 rounded shadow-sm d-flex flex-wrap gap-2">
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="reg_others"> Đăng ký hộ</label>
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="unreg"> Chưa đăng ký</label>
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="dash"> Dashboard</label>
+                                            <!-- Bổ sung quyền Báo cáo và Hiệu chỉnh -->
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="rep"> Báo cáo</label>
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="adj"> Hiệu chỉnh</label>
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="emp"> Nhân sự</label>
+                                            <label class="d-inline-block"><input type="checkbox" class="perm-feat-cb form-check-input" value="settings"> Thiết lập</label>
                                         </div>
                                     </div>
                                 </div>
@@ -763,6 +769,35 @@
 </div>
 
 <!-- CÁC MODALS -->
+
+<!-- Modal Xuất Excel & In Nhanh Dashboard -->
+<div class="modal fade" id="dashExportPrintModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title fw-bold"><i class="fa-solid fa-print"></i> Xuất / In Dashboard</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <label class="fw-bold small text-primary mb-2">Chọn buổi ăn xuất/in:</label>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <label class="btn btn-outline-secondary btn-sm"><input type="checkbox" id="dep-bf" checked class="form-check-input me-1"> Sáng</label>
+                    <label class="btn btn-outline-secondary btn-sm"><input type="checkbox" id="dep-lu" checked class="form-check-input me-1"> Trưa</label>
+                    <label class="btn btn-outline-secondary btn-sm"><input type="checkbox" id="dep-di" checked class="form-check-input me-1"> Chiều</label>
+                    <label class="btn btn-outline-secondary btn-sm"><input type="checkbox" id="dep-ot" checked class="form-check-input me-1"> Tăng ca</label>
+                </div>
+                <label class="fw-bold small text-primary mb-2">Cột thông tin hiển thị:</label>
+                <div class="small mb-3 text-muted fst-italic">Các cột sẽ được lấy theo thiết lập cột của lưới Dashboard.</div>
+                
+                <div class="row g-2">
+                    <div class="col-6"><button class="btn btn-outline-success w-100 fw-bold shadow-sm" onclick="exportDashboardExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button></div>
+                    <div class="col-6"><button class="btn btn-outline-primary w-100 fw-bold shadow-sm" onclick="printDashboard()"><i class="fa-solid fa-print"></i> In nhanh</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Copy Ngày -->
 <div class="modal fade" id="copyDateModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -1029,9 +1064,8 @@
             clearInterval(simInt); let p = 0; simInt = setInterval(() => { p += (90 - p)*0.1; bar.style.width = p+'%'; pct.innerText = Math.round(p)+'%'; }, 100); 
         } 
         else { clearInterval(simInt); bar.style.width = '100%'; pct.innerText = '100%'; setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 1000); }
-    }
-    
-    async function processApiQueue() {
+    }			
+async function processApiQueue() {
         if (isSyncing || apiQueue.length === 0) return; 
         isSyncing = true; updateProgressUI(true, apiQueue[0].msg);
         while (apiQueue.length > 0) { 
@@ -1330,7 +1364,7 @@
         canEditEmp = (currentUser.role === 'Admin_full');
         
         let perms = appSettings.userPerms ? appSettings.userPerms[currentUser.mnv] : null;
-        let f_ro = false, f_un = false, f_da = false, f_em = false, f_se = false;
+        let f_ro = false, f_un = false, f_da = false, f_em = false, f_se = false, f_rep = false, f_adj = false;
 
         if (perms && perms.features) {
             f_ro = perms.features.includes('reg_others');
@@ -1338,15 +1372,17 @@
             f_da = perms.features.includes('dash');
             f_em = perms.features.includes('emp');
             f_se = perms.features.includes('settings');
+            f_rep = perms.features.includes('rep');
+            f_adj = perms.features.includes('adj');
         }
         
         if (currentUser.role === 'Admin_full') {
-            f_ro = f_un = f_da = f_em = f_se = true;
+            f_ro = f_un = f_da = f_em = f_se = f_rep = f_adj = true;
         } else if (currentUser.role === 'Bep_An') {
             f_da = true;
         }
         
-        let canManage = f_ro || f_un || f_da || f_em || f_se;
+        let canManage = f_ro || f_un || f_da || f_em || f_se || f_rep || f_adj;
         
         let menuHTML = '';
         if(canManage) {
@@ -1358,11 +1394,11 @@
             if(f_un) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchRegTab('reg-unregistered', this); return false;"><i class="fa-solid fa-user-xmark"></i> Chưa đăng ký</a></li>`;
             menuHTML += `</ul></li>`;
             
-            if (f_da || f_em || f_se || currentUser.role === 'Admin_full') {
+            if (f_da || f_em || f_se || f_rep || f_adj || currentUser.role === 'Admin_full') {
                 menuHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle menu-link" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-briefcase"></i> Quản lý</a><ul class="dropdown-menu shadow-sm">`;
-                if(f_da) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('reports', this); return false;"><i class="fa-solid fa-file-excel"></i> Báo cáo</a></li>`;
+                if(f_rep) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('reports', this); return false;"><i class="fa-solid fa-file-excel"></i> Báo cáo</a></li>`;
                 if(f_da) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('dashboard', this); return false;"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>`;
-                if(f_ro) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('adjust', this); return false;"><i class="fa-solid fa-pen-ruler"></i> Hiệu chỉnh</a></li>`;
+                if(f_adj) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('adjust', this); return false;"><i class="fa-solid fa-pen-ruler"></i> Hiệu chỉnh</a></li>`;
                 if(f_em) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('employees', this); return false;"><i class="fa-solid fa-users-gear"></i> Nhân sự</a></li>`;
                 if(f_se || currentUser.role === 'Admin_full') {
                     menuHTML += `<li><a class="dropdown-item fw-bold text-secondary admin-full-only" href="#" onclick="switchView('settings', this); return false;"><i class="fa-solid fa-cogs"></i> Thiết lập</a></li>`;
@@ -1898,6 +1934,268 @@
         });
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${userCols['dash'].length + 7}" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
         document.getElementById('dash-sang').innerText = sumSangBt + sumSangHy; document.getElementById('dash-sang-bt').innerText = sumSangBt; document.getElementById('dash-sang-hy').innerText = sumSangHy; document.getElementById('dash-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('dash-trua-bt').innerText = sumTruaBt; document.getElementById('dash-trua-hy').innerText = sumTruaHy; document.getElementById('dash-toi').innerText = sumToiBt + sumToiHy; document.getElementById('dash-toi-bt').innerText = sumToiBt; document.getElementById('dash-toi-hy').innerText = sumToiHy; document.getElementById('dash-ot').innerText = sumOtBt + sumOtHy; document.getElementById('dash-ot-bt').innerText = sumOtBt; document.getElementById('dash-ot-hy').innerText = sumOtHy;
+    }
+
+    // Modal Xuất Excel Dashboard
+    let dpModal = null;
+    function openPrintExportModal() {
+        if(!dpModal) dpModal = new bootstrap.Modal(document.getElementById('dashExportPrintModal'));
+        dpModal.show();
+    }
+
+    async function exportDashboardExcel() {
+        let dStrInput = document.getElementById('dash-date').value;
+        if(!dStrInput) return showToast("Vui lòng chọn khoảng thời gian!", "danger");
+        
+        let showBf = document.getElementById('dep-bf').checked;
+        let showLu = document.getElementById('dep-lu').checked;
+        let showDi = document.getElementById('dep-di').checked;
+        let showOt = document.getElementById('dep-ot').checked;
+
+        if(!showBf && !showLu && !showDi && !showOt) {
+            return showToast("Phải chọn ít nhất 1 buổi ăn!", "danger");
+        }
+
+        let visibleCols = userCols['dash'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full'));
+        
+        showToast("Đang tạo file Excel...", "info");
+
+        let wb = new ExcelJS.Workbook();
+        let ws = wb.addWorksheet('Dashboard', { views: [{ state: 'frozen', ySplit: 6 }]});
+
+        // Hàng 1-4: Header thông tin
+        ws.getCell('A1').value = 'BÁO CÁO DANH SÁCH XUẤT ĂN TỔNG HỢP';
+        ws.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF00693C' } };
+        ws.mergeCells('A1:E1');
+        
+        ws.getCell('A2').value = `Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`;
+        ws.getCell('A3').value = `Kỳ dữ liệu: ${dStrInput}`;
+        ws.getCell('A4').value = `Người xuất: ${currentUser.name} (${currentUser.mnv})`;
+
+        // Cấu trúc mảng Header ở Row 6
+        let headers = ['STT', 'Ngày'];
+        visibleCols.forEach(c => headers.push(c.name));
+        let mealStartColIndex = headers.length + 1; 
+
+        if(showBf) headers.push('Sáng');
+        if(showLu) headers.push('Trưa');
+        if(showDi) headers.push('Chiều');
+        if(showOt) headers.push('Tăng ca');
+        headers.push('Ghi chú');
+
+        // Lọc Data
+        let dStart, dEnd; 
+        if(dStrInput.includes(' to ')) { let p = dStrInput.split(' to '); let p1 = p[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = p[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
+        let sText = removeAccents(document.getElementById('dash-search').value);
+        let sDepts = getCheckedTreeVals('dash-dept-tree');
+        let sStatuses = getCheckedStatuses('dash');
+        let sBpGoc = getCheckedBpGoc('dash');
+
+        let exportDataRows = [];
+        let rIdx = 7;
+        let cIdx = 1;
+        let sumBf = 0, sumLu = 0, sumDi = 0, sumOt = 0;
+
+        dashboardData.forEach(row => {
+            let cleanDate = String(row.date).trim(); let rDateObj; 
+            if(cleanDate.includes('/')) { let p = cleanDate.split('/'); rDateObj = new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); } else rDateObj = new Date(cleanDate);
+            
+            if (rDateObj >= dStart && rDateObj <= dEnd) {
+                let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; 
+                let status = empObj.leaveStatus || 'Đang làm việc';
+                
+                if (!sStatuses.includes(status)) return;
+                let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.dv) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2) || sDepts.includes(empObj.bp3) || sDepts.includes(empObj.bp4) || sDepts.includes(empObj.bp5);
+                let textMatch = (!sText) || removeAccents(row.mnv).includes(sText) || removeAccents(row.name).includes(sText);
+                let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(row.bp_goc);
+
+                if (deptMatch && textMatch && bpGocMatch) {
+                    let vBf = row.breakfast === '0' || !row.breakfast ? '' : row.breakfast;
+                    let vLu = row.lunch === '0' || !row.lunch ? '' : row.lunch;
+                    let vDi = row.dinner === '0' || !row.dinner ? '' : row.dinner;
+                    let vOt = row.ot === '0' || !row.ot ? '' : row.ot;
+                    
+                    let hasTargetMeal = (showBf && vBf) || (showLu && vLu) || (showDi && vDi) || (showOt && vOt);
+                    
+                    if(hasTargetMeal) {
+                        if(showBf && vBf) sumBf++;
+                        if(showLu && vLu) sumLu++;
+                        if(showDi && vDi) sumDi++;
+                        if(showOt && vOt) sumOt++;
+
+                        let rData = [cIdx++, row.date];
+                        visibleCols.forEach(c => rData.push(empObj[c.id] || row[c.id] || '')); // Lấy data từ empObj hoặc row (vd bp_goc)
+                        if(showBf) rData.push(vBf);
+                        if(showLu) rData.push(vLu);
+                        if(showDi) rData.push(vDi);
+                        if(showOt) rData.push(vOt);
+                        rData.push(row.note || '');
+                        exportDataRows.push(rData);
+                    }
+                }
+            }
+        });
+
+        // Ghi ROW 5: TỔNG SỐ SUẤT (Tô đậm)
+        let row5 = ws.getRow(5);
+        row5.getCell(mealStartColIndex - 1).value = 'TỔNG CỘNG:';
+        row5.getCell(mealStartColIndex - 1).font = { bold: true, color: { argb: 'FFFF0000' } };
+        row5.getCell(mealStartColIndex - 1).alignment = { horizontal: 'right' };
+        
+        let currentCol = mealStartColIndex;
+        if(showBf) { row5.getCell(currentCol).value = sumBf; row5.getCell(currentCol).font = { bold: true, size: 13, color: { argb: 'FF0000FF' } }; currentCol++; }
+        if(showLu) { row5.getCell(currentCol).value = sumLu; row5.getCell(currentCol).font = { bold: true, size: 13, color: { argb: 'FF00B050' } }; currentCol++; }
+        if(showDi) { row5.getCell(currentCol).value = sumDi; row5.getCell(currentCol).font = { bold: true, size: 13, color: { argb: 'FF7030A0' } }; currentCol++; }
+        if(showOt) { row5.getCell(currentCol).value = sumOt; row5.getCell(currentCol).font = { bold: true, size: 13, color: { argb: 'FFFF0000' } }; currentCol++; }
+        
+        // Ghi ROW 6: Tiêu đề cột
+        let row6 = ws.getRow(6);
+        row6.values = headers;
+        row6.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        row6.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let i = 1; i <= headers.length; i++) {
+            row6.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00693C' } };
+            row6.getCell(i).border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        }
+        
+        // Ghi ROW 7+: Data
+        exportDataRows.forEach(rowData => {
+            let tr = ws.addRow(rowData);
+            tr.eachCell(cell => {
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.alignment = { vertical: 'middle' };
+            });
+            // Căn giữa cho STT, Ngày, và các cột suất ăn
+            tr.getCell(1).alignment = { horizontal: 'center' };
+            tr.getCell(2).alignment = { horizontal: 'center' };
+            for(let i = mealStartColIndex; i < mealStartColIndex + (showBf?1:0) + (showLu?1:0) + (showDi?1:0) + (showOt?1:0); i++) {
+                tr.getCell(i).alignment = { horizontal: 'center' };
+                tr.getCell(i).font = { bold: true };
+            }
+        });
+
+        // Set độ rộng cột auto
+        ws.columns.forEach((c, idx) => {
+            if(idx === 0) c.width = 6;
+            else if(idx === 1) c.width = 12;
+            else if(idx >= mealStartColIndex - 1 && idx < headers.length - 1) c.width = 10;
+            else c.width = 20;
+        });
+
+        const outBuffer = await wb.xlsx.writeBuffer();
+        saveAs(new Blob([outBuffer]), `Dashboard_${dStrInput.replace(/\//g, '.')}.xlsx`);
+        if(dpModal) dpModal.hide();
+        showToast("Xuất Dashboard thành công!", "success");
+    }
+
+    function printDashboard() {
+        let dStrInput = document.getElementById('dash-date').value;
+        if(!dStrInput) return showToast("Vui lòng chọn khoảng thời gian!", "danger");
+        
+        let showBf = document.getElementById('dep-bf').checked;
+        let showLu = document.getElementById('dep-lu').checked;
+        let showDi = document.getElementById('dep-di').checked;
+        let showOt = document.getElementById('dep-ot').checked;
+
+        if(!showBf && !showLu && !showDi && !showOt) return showToast("Phải chọn ít nhất 1 buổi ăn!", "danger");
+
+        let visibleCols = userCols['dash'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full'));
+        
+        let dStart, dEnd; 
+        if(dStrInput.includes(' to ')) { let p = dStrInput.split(' to '); let p1 = p[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = p[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
+        let sText = removeAccents(document.getElementById('dash-search').value);
+        let sDepts = getCheckedTreeVals('dash-dept-tree');
+        let sStatuses = getCheckedStatuses('dash');
+        let sBpGoc = getCheckedBpGoc('dash');
+
+        let cIdx = 1, sumBf = 0, sumLu = 0, sumDi = 0, sumOt = 0;
+        let tbodyHtml = '';
+
+        dashboardData.forEach(row => {
+            let cleanDate = String(row.date).trim(); let rDateObj; 
+            if(cleanDate.includes('/')) { let p = cleanDate.split('/'); rDateObj = new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); } else rDateObj = new Date(cleanDate);
+            
+            if (rDateObj >= dStart && rDateObj <= dEnd) {
+                let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; 
+                let status = empObj.leaveStatus || 'Đang làm việc';
+                if (!sStatuses.includes(status)) return;
+                
+                let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.dv) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2) || sDepts.includes(empObj.bp3) || sDepts.includes(empObj.bp4) || sDepts.includes(empObj.bp5);
+                let textMatch = (!sText) || removeAccents(row.mnv).includes(sText) || removeAccents(row.name).includes(sText);
+                let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(row.bp_goc);
+
+                if (deptMatch && textMatch && bpGocMatch) {
+                    let vBf = row.breakfast === '0' || !row.breakfast ? '' : row.breakfast;
+                    let vLu = row.lunch === '0' || !row.lunch ? '' : row.lunch;
+                    let vDi = row.dinner === '0' || !row.dinner ? '' : row.dinner;
+                    let vOt = row.ot === '0' || !row.ot ? '' : row.ot;
+                    
+                    let hasTargetMeal = (showBf && vBf) || (showLu && vLu) || (showDi && vDi) || (showOt && vOt);
+                    
+                    if(hasTargetMeal) {
+                        if(showBf && vBf) sumBf++;
+                        if(showLu && vLu) sumLu++;
+                        if(showDi && vDi) sumDi++;
+                        if(showOt && vOt) sumOt++;
+
+                        tbodyHtml += `<tr><td style="text-align:center;">${cIdx++}</td><td style="text-align:center;">${row.date}</td>`;
+                        visibleCols.forEach(c => tbodyHtml += `<td>${empObj[c.id] || row[c.id] || ''}</td>`);
+                        if(showBf) tbodyHtml += `<td style="text-align:center; font-weight:bold;">${vBf}</td>`;
+                        if(showLu) tbodyHtml += `<td style="text-align:center; font-weight:bold;">${vLu}</td>`;
+                        if(showDi) tbodyHtml += `<td style="text-align:center; font-weight:bold;">${vDi}</td>`;
+                        if(showOt) tbodyHtml += `<td style="text-align:center; font-weight:bold;">${vOt}</td>`;
+                        tbodyHtml += `<td>${row.note || ''}</td></tr>`;
+                    }
+                }
+            }
+        });
+
+        let thHtml = `<th style="width: 40px;">STT</th><th style="width: 80px;">Ngày</th>`;
+        visibleCols.forEach(c => thHtml += `<th>${c.name}</th>`);
+        if(showBf) thHtml += `<th style="width: 50px;">Sáng</th>`;
+        if(showLu) thHtml += `<th style="width: 50px;">Trưa</th>`;
+        if(showDi) thHtml += `<th style="width: 50px;">Chiều</th>`;
+        if(showOt) thHtml += `<th style="width: 60px;">Tăng ca</th>`;
+        thHtml += `<th>Ghi chú</th>`;
+
+        let colspanForTotal = visibleCols.length + 2;
+        let sumRowHtml = `<tr><td colspan="${colspanForTotal}" style="text-align:right; font-weight:bold; color:red; font-size:16px;">TỔNG CỘNG:</td>`;
+        if(showBf) sumRowHtml += `<td style="text-align:center; font-weight:bold; font-size:16px; color:blue;">${sumBf}</td>`;
+        if(showLu) sumRowHtml += `<td style="text-align:center; font-weight:bold; font-size:16px; color:green;">${sumLu}</td>`;
+        if(showDi) sumRowHtml += `<td style="text-align:center; font-weight:bold; font-size:16px; color:purple;">${sumDi}</td>`;
+        if(showOt) sumRowHtml += `<td style="text-align:center; font-weight:bold; font-size:16px; color:red;">${sumOt}</td>`;
+        sumRowHtml += `<td></td></tr>`;
+
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>In Báo Cáo</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; font-size: 13px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #000; padding: 6px; }
+                th { background-color: #00693c; color: white; -webkit-print-color-adjust: exact; }
+                h2 { margin: 0 0 10px 0; color: #00693c; }
+                .meta { font-size: 12px; color: #555; margin-bottom: 5px; }
+            </style>
+            </head><body>
+            <h2>BÁO CÁO DANH SÁCH SUẤT ĂN TỔNG HỢP</h2>
+            <div class="meta"><b>Kỳ dữ liệu:</b> ${dStrInput}</div>
+            <div class="meta"><b>Thời gian in:</b> ${new Date().toLocaleString('vi-VN')}</div>
+            <div class="meta"><b>Người in:</b> ${currentUser.name}</div>
+            <table>
+                <thead>
+                    ${sumRowHtml}
+                    <tr>${thHtml}</tr>
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            <script>window.onload = function() { window.print(); window.close(); }<\/script>
+            </body></html>
+        `);
+        printWindow.document.close();
+        if(dpModal) dpModal.hide();
     }
 
     // REPORTS (Tab)
@@ -3215,7 +3513,7 @@ async function exportEmployeesExcel() {
         });
     }
 
-let empModal;
+    let empModal;
     
     function addCongTacRow() {
         let isGuest = currentEmpType === 'GUEST';
@@ -3413,4 +3711,4 @@ let empModal;
     }
 </script>
 </body>
-</html>
+</html>	
