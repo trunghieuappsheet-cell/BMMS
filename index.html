@@ -385,7 +385,7 @@
                                     <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đã nghỉ" onchange="renderUnregistered()"> Đã nghỉ</label></li>
                                 </ul>
                             </div>
-							<select id="unreg-group-by" class="fform-select form-select-sm border-dark fw-bold filter-item text-dark" onchange="renderUnregistered()" style="width: auto;">
+							<select id="unreg-group-by" class="form-select form-select-sm border-secondary fw-bold filter-item text-dark" onchange="renderUnregistered()" style="width: auto;">
                                 <option value="bp_goc">BP Chấm công</option>
                                 <option value="dv">Đơn vị</option>
                                 <option value="bp1">BP Cấp 1</option>
@@ -397,7 +397,6 @@
                         </div>
                         <div class="card shadow-sm mb-3 border-0 bg-white rounded">
                             <div class="card-body">
-                                <h6 class="fw-bold text-danger text-center"><i class="fa-solid fa-chart-bar"></i> BIỂU ĐỒ SỐ LƯỢNG ĐĂNG KÝ / CHƯA ĐĂNG KÝ</h6>
                                 <div style="height: 65vh; width: 100%;"><canvas id="unregChart"></canvas></div>
                             </div>
                         </div>
@@ -488,8 +487,7 @@
                         </ul>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('dash')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
-                </div>
-                
+                </div>                
                 <div class="row text-center mb-3 g-3">
                     <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #0d6efd;"><i class="fa-solid fa-mug-saucer"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG SÁNG</h6><div class="dash-stat" id="dash-sang">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="dash-sang-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="dash-sang-hy" class="fs-5">0</span></span></div></div></div>
                     <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #198754;"><i class="fa-solid fa-bowl-rice"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TRƯA</h6><div class="dash-stat" id="dash-trua">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="dash-trua-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="dash-trua-hy" class="fs-5">0</span></span></div></div></div>
@@ -2895,69 +2893,114 @@ function renderUnregChart(unregCounts, totalCounts) {
         let registeredData = labels.map(l => (totalCounts[l] || 0) - (unregCounts[l] || 0));
         let unregData = labels.map(l => unregCounts[l] || 0);
 
-        // HIỆU ỨNG HOLOGRAM: XANH BIM GROUP SÁNG (Emerald / Mint)
-        let gradReg = ctx.createLinearGradient(0, 0, 500, 0);
-        gradReg.addColorStop(0, 'rgba(0, 204, 136, 0.85)'); // Xanh BIM sáng
-        gradReg.addColorStop(1, 'rgba(0, 204, 136, 0.15)'); // Mờ dần ra xa
+        // =========================================================
+        // TỰ ĐỘNG CĂN CHỈNH CHIỀU CAO VỪA VỚI MÀN HÌNH HIỂN THỊ
+        // Mỗi thanh tiến trình cần ít nhất 40px không gian để không bị ép nhỏ
+        let minHeight = labels.length * 40 + 150; 
+        // Lấy mức lớn hơn giữa 70% chiều cao màn hình (70vh) và chiều cao tối thiểu cần thiết
+        canvas.parentElement.style.height = `max(70vh, ${minHeight}px)`;
+        // =========================================================
 
-        // MÀU CHƯA ĐĂNG KÝ (Hồng Neon)
-        let gradUnreg = ctx.createLinearGradient(0, 0, 500, 0);
-        gradUnreg.addColorStop(0, 'rgba(255, 0, 128, 0.85)'); 
-        gradUnreg.addColorStop(1, 'rgba(255, 0, 128, 0.15)'); 
+        // 1. TÍNH TOÁN TỔNG TIẾN ĐỘ CHO TOÀN BỘ BIỂU ĐỒ
+        let totalReg = registeredData.reduce((a, b) => a + b, 0);
+        let totalAll = labels.map(l => totalCounts[l] || 0).reduce((a, b) => a + b, 0);
+        let totalPct = totalAll > 0 ? Math.round((totalReg / totalAll) * 100) : 0;
 
+        // 2. TẠO PLUGIN VẼ CHỮ TRỰC TIẾP LÊN CUỐI MỖI THANH TIẾN TRÌNH
+        const progressLabelPlugin = {
+            id: 'progressLabelPlugin',
+            afterDatasetsDraw(chart) {
+                const { ctx, data } = chart;
+                ctx.save();
+                ctx.font = 'bold 12px Arial';
+                ctx.textBaseline = 'middle';
+                
+                // Lấy tọa độ của lớp stacked cuối cùng (lớp Chưa đăng ký)
+                let meta = chart.getDatasetMeta(1); 
+                
+                data.labels.forEach((label, index) => {
+                    let reg = data.datasets[0].data[index];
+                    let unreg = data.datasets[1].data[index];
+                    let total = reg + unreg;
+                    if (total === 0) return;
+                    
+                    let pct = Math.round((reg / total) * 100);
+                    let text = ` ${reg} / ${total} (${pct}%)`;
+                    
+                    if (meta.data[index]) {
+                        let yPos = meta.data[index].y;
+                        let xPos = meta.data[index].x; 
+                        
+                        ctx.textAlign = 'left';
+                        ctx.fillStyle = '#000000'; // Màu chữ đen
+                        // Vẽ text ngay sát cạnh phải của thanh tiến trình
+                        ctx.fillText(text, xPos + 8, yPos); 
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        // 3. VẼ BIỂU ĐỒ PROGRESS BAR
         unregChartInstance = new Chart(ctx, { 
             type: 'bar', 
             data: { 
                 labels: labels, 
                 datasets: [ 
                     { 
-                        label: 'Đã đăng ký', 
+                        label: 'Đã hoàn thành', 
                         data: registeredData, 
-                        backgroundColor: gradReg, 
-                        borderColor: '#00cc88', // Viền xanh BIM sáng
-                        borderWidth: 1.5,
-                        borderRadius: 5, // Bo góc cho mềm mại
-                        barPercentage: 0.6,
-                        hoverBackgroundColor: 'rgba(0, 204, 136, 1)' // Đậm nét khi trỏ chuột vào
+                        backgroundColor: '#00a651', // Màu xanh BIM Group
+                        borderColor: '#007a3b',
+                        borderWidth: 1,
+                        barPercentage: 0.7 
                     }, 
                     { 
-                        label: 'Chưa Đăng Ký', 
+                        label: 'Chưa đăng ký', 
                         data: unregData, 
-                        backgroundColor: gradUnreg, 
-                        borderColor: '#ff0080', // Viền Hồng Neon
-                        borderWidth: 1.5,
-                        borderRadius: 5,
-                        barPercentage: 0.6,
-                        hoverBackgroundColor: 'rgba(255, 0, 128, 1)'
+                        backgroundColor: '#ffffff', // Màu trắng
+                        borderColor: '#adb5bd', 
+                        borderWidth: 1,
+                        barPercentage: 0.7
                     } 
                 ] 
             }, 
+            plugins: [progressLabelPlugin], 
             options: { 
                 indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
+                layout: {
+                    // Chừa khoảng trống 100px bên phải để số liệu không bị lẹm
+                    padding: { right: 100 } 
+                },
                 scales: { 
                     x: { 
                         stacked: true, 
                         beginAtZero: true, 
                         ticks: { stepSize: 1, precision: 0 },
-                        grid: { color: 'rgba(0, 0, 0, 0.04)' } // Làm mờ lưới nền để nổi biểu đồ
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' } 
                     }, 
                     y: { 
                         stacked: true, 
                         ticks: { autoSkip: false, font: { weight: '600' } },
-                        grid: { display: false } // Ẩn lưới ngang cho thoáng
+                        grid: { display: false } 
                     } 
                 }, 
                 plugins: { 
+                    title: {
+                        display: true,
+                        text: `TỔNG TIẾN ĐỘ: HOÀN THÀNH ${totalReg} / ${totalAll} (${totalPct}%)`,
+                        font: { size: 16, weight: 'bold' },
+                        color: '#00a651',
+                        padding: { bottom: 20 }
+                    },
                     legend: { display: true, position: 'bottom' }, 
                     tooltip: { 
-                        // Tooltip phong cách kính tối màu (Glassmorphism)
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleColor: '#ffffff',
-                        bodyColor: '#00cc88', // Chữ tooltip đổi theo màu viền
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
-                        borderWidth: 1,
+                        bodyColor: '#ffffff',
+                        borderWidth: 0,
                         padding: 10,
                         callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw; } } 
                     } 
