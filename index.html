@@ -149,7 +149,6 @@
                 <img src="https://lh3.googleusercontent.com/d/18DgW1i6MtUKwa1pfHG92FxBZ6J_yA1MW" alt="Logo" style="height: 30px;">
                 <h5 class="fw-bold text-bim m-0 lh-1" style="font-size: 1.15rem;">BIM MEAL MANAGEMENT</h5>
             </div>
-            <div class="mb-3"><label class="form-label fw-bold text-muted small">MÃ NHÂN VIÊN</label><input type="text" id="login-mnv" class="form-control form-control-lg" placeholder="BIM0123"></div>
             <div class="mb-3"><label class="form-label fw-bold text-muted small">MẬT KHẨU</label><input type="password" id="login-pass" class="form-control form-control-lg" placeholder="Nhập mật khẩu"></div>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="form-check"><input class="form-check-input border-secondary" type="checkbox" id="remember-me" checked><label class="form-check-label fw-bold text-muted small" for="remember-me">Ghi nhớ đăng nhập</label></div>
@@ -187,6 +186,16 @@
 
             <div class="d-flex align-items-center gap-2 ms-auto mt-2 mt-lg-0">
                 <div class="text-end border-end pe-2" id="header-countdown" style="min-width: 100px;"></div>
+                
+                <!-- BỔ SUNG NÚT ĐỒNG BỘ THỦ CÔNG NHƯ YÊU CẦU -->
+                <div class="mx-1 position-relative">
+                    <button class="btn btn-outline-primary btn-sm rounded-circle position-relative" onclick="manualSyncNow()" title="Đồng bộ dữ liệu" style="width: 35px; height: 35px;">
+                        <i id="manual-sync-icon" class="fa-solid fa-rotate"></i>
+                        <span id="manual-sync-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em; display: none;">0</span>
+                    </button>
+                </div>
+                <!-- KẾT THÚC BỔ SUNG -->
+
                 <div class="dropdown mx-1 position-relative">
                     <button class="btn btn-outline-secondary btn-sm rounded-circle position-relative" data-bs-toggle="dropdown" onclick="markRead()" title="Thông báo" style="width: 35px; height: 35px;">
                         <i id="bell-icon" class="fa-solid fa-bell"></i><span id="notif-badge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none"></span>
@@ -552,8 +561,7 @@
                     </table>
                 </div>
             </div>
-
-            <!-- TAB 5: QUẢN LÝ NHÂN SỰ -->
+<!-- TAB 5: QUẢN LÝ NHÂN SỰ -->
             <div id="view-employees" class="page-view d-none">
                 <div class="toolbar-filter">
                     <input type="text" id="emp-search" class="form-control form-control-sm border-primary filter-item search-input" placeholder="Tìm tên, mã NV..." onkeyup="debounceSearch(filterEmployees, 100)">
@@ -669,9 +677,9 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <div class="card shadow-sm h-100 border-0">
+                        <div class="card shadow-sm border-0 mb-4">
                             <div class="card-header fw-bold bg-warning"><i class="fa-solid fa-calendar-star"></i> Quản lý Lễ / Tết</div>
-                            <div class="card-body bg-light p-3">
+                            <div class="card-body bg-light p-3" style="max-height: 400px; overflow-y: auto;">
                                 <div class="row g-2 mb-3">
                                     <div class="col-12"><label class="small fw-bold">Thêm mới / Cập nhật ngày Lễ</label></div>
                                     <div class="col-4"><input type="text" id="hol-date" class="form-control form-control-sm border-warning fw-bold text-center flatpickr-date" placeholder="dd/mm/yyyy"></div>
@@ -681,6 +689,31 @@
                                 <ul class="list-group list-group-flush border rounded" id="holiday-list"></ul>
                             </div>
                         </div>
+                        
+                        <!-- CARD MỚI: CẤU HÌNH ĐỒNG BỘ REALTIME -->
+                        <div class="card shadow-sm border-0 admin-full-only">
+                            <div class="card-header fw-bold bg-info text-dark"><i class="fa-solid fa-rotate"></i> Cấu hình Đồng bộ Realtime</div>
+                            <div class="card-body bg-light">
+                                <p class="text-muted small mb-3">Thiết lập thời gian tự động đồng bộ (giây) cho từng quyền. Nhập <b>0</b> để tắt tự động đồng bộ (chỉ dùng nút đồng bộ thủ công trên góc phải).</p>
+                                <div class="row g-2 align-items-center mb-2">
+                                    <div class="col-5 fw-bold text-dark small">Admin_full:</div>
+                                    <div class="col-7"><div class="input-group input-group-sm"><input type="number" id="sync-admin-full" class="form-control text-center fw-bold text-primary" value="30"><span class="input-group-text bg-white">giây</span></div></div>
+                                    
+                                    <div class="col-5 fw-bold text-dark small">Admin_BP:</div>
+                                    <div class="col-7"><div class="input-group input-group-sm"><input type="number" id="sync-admin-bp" class="form-control text-center fw-bold text-primary" value="30"><span class="input-group-text bg-white">giây</span></div></div>
+                                    
+                                    <div class="col-5 fw-bold text-dark small">Hành chính bộ phận:</div>
+                                    <div class="col-7"><div class="input-group input-group-sm"><input type="number" id="sync-hcbp" class="form-control text-center fw-bold text-primary" value="30"><span class="input-group-text bg-white">giây</span></div></div>
+                                    
+                                    <div class="col-5 fw-bold text-dark small">Bep_An:</div>
+                                    <div class="col-7"><div class="input-group input-group-sm"><input type="number" id="sync-bep" class="form-control text-center fw-bold text-primary" value="30"><span class="input-group-text bg-white">giây</span></div></div>
+                                    
+                                    <div class="col-5 fw-bold text-dark small">Nhan_Vien:</div>
+                                    <div class="col-7"><div class="input-group input-group-sm"><input type="number" id="sync-nhanvien" class="form-control text-center fw-bold text-secondary" value="0"><span class="input-group-text bg-white">giây</span></div></div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -1066,9 +1099,9 @@
 <input type="file" id="emp-excel-upload-input" accept=".xlsx, .xls" class="d-none" onchange="handleEmployeeExcelUpload(event)">
 <div id="toast-container"></div>
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzxZVtSrDN2m6P2tU2dNvdydRw_4arDh8r2QBUH91YbDoeZ1S9b0au12JnUWhcdJxMT8A/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwKa_uPSXj7um1x0Lye8QzxXjssVZ8gh3QY5lw2Iv6CeZUgZfShZRyv0tGf1SSCt2PL/exec';
     let currentUser = null, dashboardData = [], employeeData = [], holidaysData = [], appSettings = {}, hcData = [];
-    let currentCycleOffset = 0, searchTimeout, realtimeTimer;
+let currentCycleOffset = 0, searchTimeout, realtimeTimer;
     let selectedVcalDates = new Set(), unregChartInstance = null, unregDataCache = {}, currentUnregDept = ""; 
     let canEditEmp = false, currentEmpType = 'NORMAL';
     let fpInstances = {}; window.cycleOffsets = { dash: 0, unreg: 0, ro: 0, mc: 0, adj: 0, rep: 0 };
@@ -1077,7 +1110,29 @@
     let tempAdjustCache = {};
 
     let apiQueue = [], isSyncing = false, simInt;
-    function enqueueTask(payload, msg, onSuccess, onFail) { apiQueue.push({ payload, msg, onSuccess, onFail }); processApiQueue(); }
+
+    // CẬP NHẬT BADGE ĐỒNG BỘ THỦ CÔNG
+    function updateSyncBadge() {
+        let badge = document.getElementById('manual-sync-badge');
+        let icon = document.getElementById('manual-sync-icon');
+        if(badge && icon) {
+            if(apiQueue.length > 0) {
+                badge.style.display = 'inline-block';
+                badge.innerText = apiQueue.length;
+                icon.classList.add('fa-spin');
+            } else {
+                badge.style.display = 'none';
+                icon.classList.remove('fa-spin');
+            }
+        }
+    }
+
+    function enqueueTask(payload, msg, onSuccess, onFail) { 
+        apiQueue.push({ payload, msg, onSuccess, onFail }); 
+        updateSyncBadge();
+        processApiQueue(); 
+    }
+    
     function updateProgressUI(isStart, msg) {
         let toast = document.getElementById('sync-toast'), bar = document.getElementById('sync-toast-bar'), pct = document.getElementById('sync-toast-pct'), msgTxt = document.getElementById('sync-toast-msg');
         if(isStart) { 
@@ -1087,7 +1142,6 @@
         else { clearInterval(simInt); bar.style.width = '100%'; pct.innerText = '100%'; setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 1000); }
     }
     
-    // BỔ SUNG HEADERS CHỐNG LỖI CORS PREFLIGHT
     async function processApiQueue() {
         if (isSyncing || apiQueue.length === 0) return; 
         isSyncing = true; updateProgressUI(true, apiQueue[0].msg);
@@ -1100,14 +1154,43 @@
                     body: JSON.stringify(currentTask.payload) 
                 }); 
                 let data = await res.json(); 
-                apiQueue.shift(); if (currentTask.onSuccess) currentTask.onSuccess(data); 
+                apiQueue.shift(); 
+                updateSyncBadge();
+                if (currentTask.onSuccess) currentTask.onSuccess(data); 
             } catch (e) { 
-                apiQueue.shift(); if (currentTask.onFail) currentTask.onFail(e); 
+                apiQueue.shift(); 
+                updateSyncBadge();
+                if (currentTask.onFail) currentTask.onFail(e); 
             } 
             if (apiQueue.length > 0) updateProgressUI(true, apiQueue[0].msg);
         }
         updateProgressUI(false); isSyncing = false;
     }
+
+    // ĐỒNG BỘ THỦ CÔNG TỪ HEADER
+    function manualSyncNow() {
+        let icon = document.getElementById('manual-sync-icon');
+        icon.classList.add('fa-spin');
+        
+        enqueueTask({ action: 'get_dashboard', user: currentUser }, "Đang tải dữ liệu mới...", (json) => {
+            if(json.success) { 
+                dashboardData = json.data; 
+                if(json.hcData) hcData = json.hcData;
+                checkNotifications();
+                showToast("Đã đồng bộ dữ liệu mới nhất!", "success");
+                
+                if(!document.getElementById('view-dashboard').classList.contains('d-none')) renderDashboard();
+                if(!document.getElementById('view-reports').classList.contains('d-none')) renderReports();
+                if(!document.getElementById('view-adjust').classList.contains('d-none') && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { renderAdjustGrid(); }
+                if(!document.getElementById('view-register').classList.contains('d-none') && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    if(document.getElementById('reg-personal').classList.contains('active')) { if(document.getElementById('mode-cycle').classList.contains('active')) renderRegGrid(); if(document.getElementById('mode-vcal').classList.contains('active')) renderVcal(); } 
+                    else if(document.getElementById('reg-others').classList.contains('active')) { renderRegOthersGrid(); } else if(document.getElementById('reg-unregistered').classList.contains('active')) { renderUnregistered(); }
+                }
+            }
+            setTimeout(() => { if(apiQueue.length === 0) icon.classList.remove('fa-spin'); }, 500);
+        });
+    }
+
     function showToast(msg, type = 'secondary') { let cid = 't_' + Date.now(); document.getElementById('toast-container').insertAdjacentHTML('beforeend', `<div id="${cid}" class="toast align-items-center text-bg-${type} border-0 show mb-2 shadow"><div class="d-flex"><div class="toast-body fw-bold">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`); setTimeout(() => document.getElementById(cid)?.remove(), 3000); }
 
     function attachScrollButtons() {
@@ -1562,6 +1645,15 @@
             document.getElementById('price-ot').value = prices.ot.toLocaleString('en-US');
         }
         
+        let s = appSettings.syncSettings || { 'Admin_full': 30, 'Admin_BP': 30, 'Hành chính bộ phận': 30, 'Bep_An': 30, 'Nhan_Vien': 0 };
+        if(document.getElementById('sync-admin-full')) {
+            document.getElementById('sync-admin-full').value = s['Admin_full'] !== undefined ? s['Admin_full'] : 30;
+            document.getElementById('sync-admin-bp').value = s['Admin_BP'] !== undefined ? s['Admin_BP'] : 30;
+            document.getElementById('sync-hcbp').value = s['Hành chính bộ phận'] !== undefined ? s['Hành chính bộ phận'] : 30;
+            document.getElementById('sync-bep').value = s['Bep_An'] !== undefined ? s['Bep_An'] : 30;
+            document.getElementById('sync-nhanvien').value = s['Nhan_Vien'] !== undefined ? s['Nhan_Vien'] : 0;
+        }
+        
         if(document.getElementById('perm-user-tbody')) {
             let permUserTbody = document.getElementById('perm-user-tbody');
             let html = '';
@@ -1709,10 +1801,32 @@
         };
         appSettings.mealLocks = { main: { d: parseInt(document.getElementById(`set-main-d`).value)||0, h: parseInt(document.getElementById(`set-main-h`).value)||0 }, ot: { d: parseInt(document.getElementById(`set-ot-d`).value)||0, h: parseInt(document.getElementById(`set-ot-h`).value)||0 }, sunMain: { d: parseInt(document.getElementById(`set-sun-main-d`).value)||0, h: parseInt(document.getElementById(`set-sun-main-h`).value)||0 }, sunOt: { d: parseInt(document.getElementById(`set-sun-ot-d`).value)||0, h: parseInt(document.getElementById(`set-sun-ot-h`).value)||0 } };
         appSettings.leaveOffset = parseInt(document.getElementById('set-leave-offset').value) || 0; appSettings.notify = { d: parseInt(document.getElementById('set-noti-d').value)||0, h: parseInt(document.getElementById('set-noti-h').value)||0 };
-        enqueueTask({ action: 'save_settings', user: currentUser, settings: appSettings }, "Đang lưu cấu hình...", (d) => { if(d.success) { showToast(d.message, 'success'); renderVcal(); } else showToast('Lỗi', 'danger'); });
+        
+        appSettings.syncSettings = {
+            'Admin_full': parseInt(document.getElementById('sync-admin-full').value) || 0,
+            'Admin_BP': parseInt(document.getElementById('sync-admin-bp').value) || 0,
+            'Hành chính bộ phận': parseInt(document.getElementById('sync-hcbp').value) || 0,
+            'Bep_An': parseInt(document.getElementById('sync-bep').value) || 0,
+            'Nhan_Vien': parseInt(document.getElementById('sync-nhanvien').value) || 0
+        };
+
+        enqueueTask({ action: 'save_settings', user: currentUser, settings: appSettings }, "Đang lưu cấu hình...", (d) => { 
+            if(d.success) { 
+                showToast(d.message, 'success'); 
+                renderVcal(); 
+                startRealtimeSync(); // Khởi động lại đồng bộ với cấu hình mới
+            } else {
+                showToast('Lỗi', 'danger'); 
+            }
+        });
     }
 
-    function openMealCostModal() {
+    // CHUYỂN KỲ TRƯỚC / SAU CHO CHẾ ĐỘ LỊCH
+    function changeRegCycle(dir) {
+        currentCycleOffset += dir;
+        renderVcal();
+    }
+function openMealCostModal() {
         let prices = appSettings.mealPrices || {bf: 0, lu: 0, di: 0, ot: 0};
         
         let sang = parseInt(document.getElementById('mc-sang').innerText) || 0;
@@ -1825,15 +1939,25 @@
     function getShortMealName(val) { if(val === 'X') return 'BT'; if(val === 'Y') return 'HY'; return '_'; }
     function getStyledMealName(val) { if(val === 'X') return '<span class="badge border border-primary text-primary bg-primary bg-opacity-10 fs-5 px-3 py-1 shadow-sm">BT</span>'; if(val === 'Y') return '<span class="badge border border-danger text-danger bg-danger bg-opacity-10 fs-5 px-3 py-1 shadow-sm">HY</span>'; return '<span class="text-muted">-</span>'; }
 
+    // CẬP NHẬT LOGIC ĐỒNG BỘ THEO CẤU HÌNH TỪNG QUYỀN
     function startRealtimeSync() {
         if(realtimeTimer) clearInterval(realtimeTimer);
+        let s = appSettings.syncSettings || { 'Admin_full': 30, 'Admin_BP': 30, 'Hành chính bộ phận': 30, 'Bep_An': 30, 'Nhan_Vien': 0 };
+        let intervalSec = s[currentUser.role];
+        if (intervalSec === undefined) intervalSec = 30; // Mặc định nếu không tìm thấy
+        
+        if (intervalSec <= 0) return; // Nếu là 0 thì không đồng bộ tự động
+        
         realtimeTimer = setInterval(async () => {
             fetch(API_URL, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'get_dashboard', user: currentUser }) 
             }).then(res => res.json()).then(json => {
-                if(json.success) { dashboardData = json.data; checkNotifications();
+                if(json.success) { 
+                    dashboardData = json.data; 
+                    if(json.hcData) hcData = json.hcData;
+                    checkNotifications();
                     if(!document.getElementById('view-dashboard').classList.contains('d-none')) renderDashboard();
                     if(!document.getElementById('view-reports').classList.contains('d-none')) renderReports();
                     if(!document.getElementById('view-adjust').classList.contains('d-none') && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { renderAdjustGrid(); }
@@ -1843,7 +1967,7 @@
                     }
                 }
             }).catch(e => console.log("Realtime Sync Fail"));
-        }, 30000); 
+        }, intervalSec * 1000); 
     }
 
     function startCountdown() { 
@@ -1890,7 +2014,8 @@
         }).then(r=>r.json()); 
         if(d.success) employeeData = d.data; buildTreeFilters(); 
     }
-function buildTreeFilters() {
+
+    function buildTreeFilters() {
         let tree = {}; employeeData.forEach(e => { let path = [e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5].filter(Boolean); if(path.length === 0) path = ['Chưa phân bổ']; let current = tree; path.forEach(node => { if(!current[node]) current[node] = {}; current = current[node]; }); }); let html = buildTreeHTML(tree, 0, 'all');
         document.querySelectorAll('.tree-dropdown-menu').forEach(el => { el.innerHTML = `<li class="p-2 sticky-top bg-white border-bottom"><input type="text" class="form-control form-control-sm" placeholder="Tìm bộ phận..." onkeyup="searchTree(this, '${el.id}')"></li><li><label class="fw-bold text-danger ps-2 mt-2 d-block"><input type="checkbox" onchange="treeCheckAll(this, '${el.id}')" checked> CHỌN TẤT CẢ</label></li>` + html; });
         
@@ -2021,9 +2146,6 @@ function buildTreeFilters() {
         document.getElementById('dash-sang').innerText = sumSangBt + sumSangHy; document.getElementById('dash-sang-bt').innerText = sumSangBt; document.getElementById('dash-sang-hy').innerText = sumSangHy; document.getElementById('dash-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('dash-trua-bt').innerText = sumTruaBt; document.getElementById('dash-trua-hy').innerText = sumTruaHy; document.getElementById('dash-toi').innerText = sumToiBt + sumToiHy; document.getElementById('dash-toi-bt').innerText = sumToiBt; document.getElementById('dash-toi-hy').innerText = sumToiHy; document.getElementById('dash-ot').innerText = sumOtBt + sumOtHy; document.getElementById('dash-ot-bt').innerText = sumOtBt; document.getElementById('dash-ot-hy').innerText = sumOtHy;
     }
 
-    // Modal Xuất Excel Dashboard
-    // Lưu cấu hình Export cho từng tài khoản
-
     function saveExportConfig() {
         try {
             let config = {
@@ -2047,7 +2169,6 @@ function buildTreeFilters() {
         
         if(!dpModal) dpModal = new bootstrap.Modal(modalEl);
         
-        // Đọc cấu hình đã lưu một cách an toàn
         let savedConfig = localStorage.getItem('bmms_export_config_' + currentUser.mnv);
         let config = null;
         try { config = savedConfig ? JSON.parse(savedConfig) : null; } catch(e) {}
@@ -2066,7 +2187,6 @@ function buildTreeFilters() {
             }
         }
 
-        // Render danh sách cột an toàn
         let colContainer = document.getElementById('dep-col-container');
         if(colContainer) {
             let visibleCols = (userCols && userCols['dash']) ? userCols['dash'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')) : [];
