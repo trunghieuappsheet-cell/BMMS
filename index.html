@@ -767,7 +767,6 @@
         </div>
     </div>
 </div>
-
 <!-- CÁC MODALS -->
 
 <!-- Modal Xuất Excel & In Nhanh Dashboard -->
@@ -1067,7 +1066,7 @@
 <input type="file" id="emp-excel-upload-input" accept=".xlsx, .xls" class="d-none" onchange="handleEmployeeExcelUpload(event)">
 <div id="toast-container"></div>
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyCzASAa-o6NFcEM7WOZrdW-_1zYK81taxMtyqaEzDj-bf_772xmxGcqZ-knqrZo3bz/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzxZVtSrDN2m6P2tU2dNvdydRw_4arDh8r2QBUH91YbDoeZ1S9b0au12JnUWhcdJxMT8A/exec';
     let currentUser = null, dashboardData = [], employeeData = [], holidaysData = [], appSettings = {}, hcData = [];
     let currentCycleOffset = 0, searchTimeout, realtimeTimer;
     let selectedVcalDates = new Set(), unregChartInstance = null, unregDataCache = {}, currentUnregDept = ""; 
@@ -1088,13 +1087,18 @@
         else { clearInterval(simInt); bar.style.width = '100%'; pct.innerText = '100%'; setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 1000); }
     }
     
+    // BỔ SUNG HEADERS CHỐNG LỖI CORS PREFLIGHT
     async function processApiQueue() {
         if (isSyncing || apiQueue.length === 0) return; 
         isSyncing = true; updateProgressUI(true, apiQueue[0].msg);
         while (apiQueue.length > 0) { 
             let currentTask = apiQueue[0];
             try { 
-                let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(currentTask.payload) }); 
+                let res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(currentTask.payload) 
+                }); 
                 let data = await res.json(); 
                 apiQueue.shift(); if (currentTask.onSuccess) currentTask.onSuccess(data); 
             } catch (e) { 
@@ -1183,13 +1187,11 @@
     const DEFAULT_COLS = { dash: ['mnv', 'name', 'gender', 'bp_goc', 'bp1', 'bp2', 'title'], ro: ['mnv', 'name', 'joinDate', 'bp_goc', 'bp1', 'bp2', 'title'], adj: ['mnv', 'name', 'bp_goc', 'bp1', 'bp2', 'title'], rep: ['mnv', 'name', 'bp_goc', 'bp1', 'bp2', 'title'], emp: ['mnv', 'name', 'gender', 'joinDate', 'bp_goc', 'bp1', 'bp2', 'title', 'role', 'password', 'leaveStatus'] };
     let userCols = { dash: [], ro: [], adj: [], rep: [], emp: [] }; let activeColTab = ''; let colModalObj = null;
 
-    // CƠ CHẾ CHỐNG LỖI MỚI NHẤT
     function initColConfig() {
         let stored = localStorage.getItem('bmms_colconfig_' + currentUser.mnv);
         try {
             if(stored) { 
                 userCols = JSON.parse(stored);
-                // Bẫy lỗi nếu thiếu các key cấu hình cũ
                 if(!userCols.dash) userCols.dash = ALL_COLS.filter(c => DEFAULT_COLS.dash.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.dash.includes(c.id)).map(c => ({...c, visible: false})));
                 if(!userCols.emp) userCols.emp = ALL_COLS.filter(c => DEFAULT_COLS.emp.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.emp.includes(c.id)).map(c => ({...c, visible: false})));
                 if(!userCols.ro) userCols.ro = ALL_COLS.filter(c => DEFAULT_COLS.ro.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.ro.includes(c.id)).map(c => ({...c, visible: false})));
@@ -1330,12 +1332,17 @@
         }
     };
 
+    // THÊM HEADER TEXT/PLAIN VÀO HÀM FETCH ĐỂ CHỐNG LỖI CORS PREFLIGHT
     async function checkLogin() { 
         const stored = localStorage.getItem('bmms_user') || sessionStorage.getItem('bmms_user');
         if(stored) { 
             try {
                 currentUser = JSON.parse(stored); 
-                let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({action: 'get_initial_data', user: currentUser})});
+                let res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({action: 'get_initial_data', user: currentUser})
+                });
                 let d = await res.json();
                 if(d.success) { dashboardData = d.dashboard; hcData = d.hcData || []; employeeData = d.employees; holidaysData = d.holidays; appSettings = d.appSettings; initColConfig(); buildTreeFilters(); showApp(); }
                 else { showLoginView(); }
@@ -1356,11 +1363,19 @@
         if(!mnv || !pass) return err.innerText = 'Nhập đủ thông tin';
         document.getElementById('btn-login').disabled = true; document.getElementById('login-spinner').classList.remove('d-none');
         try {
-            let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'login', mnv: mnv.trim(), pass: pass.trim() }) }).then(r=>r.json());
+            let res = await fetch(API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'login', mnv: mnv.trim(), pass: pass.trim() }) 
+            }).then(r=>r.json());
             if(res && res.success) { 
                 let remember = document.getElementById('remember-me').checked;
                 if(remember) localStorage.setItem('bmms_user', JSON.stringify(res.user)); else sessionStorage.setItem('bmms_user', JSON.stringify(res.user));
-                let initRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_initial_data', user: res.user }) }).then(r=>r.json());
+                let initRes = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'get_initial_data', user: res.user }) 
+                }).then(r=>r.json());
                 document.getElementById('btn-login').disabled = false; document.getElementById('login-spinner').classList.add('d-none');
                 
                 if(initRes.success) {
@@ -1381,13 +1396,30 @@
     async function handleResetPassword() {
         let mnv = document.getElementById('fg-mnv').value, phone = document.getElementById('fg-phone').value, cccd = document.getElementById('fg-cccd').value, newPass = document.getElementById('fg-new').value, confirmPass = document.getElementById('fg-confirm').value;
         if(!mnv || !phone || !cccd || !newPass) return showToast('Vui lòng nhập đủ thông tin (*)', 'danger'); if(newPass !== confirmPass) return showToast('Mật khẩu mới không khớp!', 'danger');
-        document.getElementById('btn-forgot').disabled = true; let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'reset_password', mnv: mnv.trim(), phone: phone.trim(), cccd: cccd.trim(), newPass: newPass.trim() }) }).then(r=>r.json()); document.getElementById('btn-forgot').disabled = false;
+        document.getElementById('btn-forgot').disabled = true; 
+        let res = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'reset_password', mnv: mnv.trim(), phone: phone.trim(), cccd: cccd.trim(), newPass: newPass.trim() }) 
+        }).then(r=>r.json()); 
+        document.getElementById('btn-forgot').disabled = false;
         if(res.success) { showToast(res.message, 'success'); toggleForgotPass(false); document.getElementById('login-pass').value = newPass; } else showToast(res.message, 'danger');
     }
 
     let cpModalObj;
     function openChangePassModal() { if(!cpModalObj) cpModalObj = new bootstrap.Modal(document.getElementById('changePassModal')); document.getElementById('cp-old').value = ''; document.getElementById('cp-new').value = ''; document.getElementById('cp-confirm').value = ''; cpModalObj.show(); }
-    async function submitChangePassword() { let oldPass = document.getElementById('cp-old').value, newPass = document.getElementById('cp-new').value, confirm = document.getElementById('cp-confirm').value; if(!oldPass || !newPass) return showToast("Nhập đủ thông tin!", 'danger'); if(newPass !== confirm) return showToast("Mật khẩu mới không khớp!", 'danger'); let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'change_password', mnv: currentUser.mnv, oldPass: oldPass.trim(), newPass: newPass.trim() }) }).then(r=>r.json()); if(res.success) { showToast(res.message, 'success'); cpModalObj.hide(); } else showToast(res.message, 'danger'); }
+    
+    async function submitChangePassword() { 
+        let oldPass = document.getElementById('cp-old').value, newPass = document.getElementById('cp-new').value, confirm = document.getElementById('cp-confirm').value; 
+        if(!oldPass || !newPass) return showToast("Nhập đủ thông tin!", 'danger'); 
+        if(newPass !== confirm) return showToast("Mật khẩu mới không khớp!", 'danger'); 
+        let res = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'change_password', mnv: currentUser.mnv, oldPass: oldPass.trim(), newPass: newPass.trim() }) 
+        }).then(r=>r.json()); 
+        if(res.success) { showToast(res.message, 'success'); cpModalObj.hide(); } else showToast(res.message, 'danger'); 
+    }
 
     function logout() { localStorage.removeItem('bmms_user'); sessionStorage.removeItem('bmms_user'); location.reload(); }
 
@@ -1796,7 +1828,11 @@
     function startRealtimeSync() {
         if(realtimeTimer) clearInterval(realtimeTimer);
         realtimeTimer = setInterval(async () => {
-            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard', user: currentUser }) }).then(res => res.json()).then(json => {
+            fetch(API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'get_dashboard', user: currentUser }) 
+            }).then(res => res.json()).then(json => {
                 if(json.success) { dashboardData = json.data; checkNotifications();
                     if(!document.getElementById('view-dashboard').classList.contains('d-none')) renderDashboard();
                     if(!document.getElementById('view-reports').classList.contains('d-none')) renderReports();
@@ -1838,12 +1874,23 @@
     }
 
     async function reloadDashboardData() { 
-        let d = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard', user: currentUser }) }).then(r=>r.json()); 
+        let d = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'get_dashboard', user: currentUser }) 
+        }).then(r=>r.json()); 
         if(d.success) { dashboardData = d.data; if(d.hcData) hcData = d.hcData; } 
     }
-    async function reloadEmployeeData() { let d = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_employees', user: currentUser }) }).then(r=>r.json()); if(d.success) employeeData = d.data; buildTreeFilters(); }
-
-    function buildTreeFilters() {
+    
+    async function reloadEmployeeData() { 
+        let d = await fetch(API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'get_employees', user: currentUser }) 
+        }).then(r=>r.json()); 
+        if(d.success) employeeData = d.data; buildTreeFilters(); 
+    }
+function buildTreeFilters() {
         let tree = {}; employeeData.forEach(e => { let path = [e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5].filter(Boolean); if(path.length === 0) path = ['Chưa phân bổ']; let current = tree; path.forEach(node => { if(!current[node]) current[node] = {}; current = current[node]; }); }); let html = buildTreeHTML(tree, 0, 'all');
         document.querySelectorAll('.tree-dropdown-menu').forEach(el => { el.innerHTML = `<li class="p-2 sticky-top bg-white border-bottom"><input type="text" class="form-control form-control-sm" placeholder="Tìm bộ phận..." onkeyup="searchTree(this, '${el.id}')"></li><li><label class="fw-bold text-danger ps-2 mt-2 d-block"><input type="checkbox" onchange="treeCheckAll(this, '${el.id}')" checked> CHỌN TẤT CẢ</label></li>` + html; });
         
@@ -1977,7 +2024,6 @@
     // Modal Xuất Excel Dashboard
     // Lưu cấu hình Export cho từng tài khoản
 
-// Lưu cấu hình Export cho từng tài khoản
     function saveExportConfig() {
         try {
             let config = {
@@ -2035,7 +2081,7 @@
         dpModal.show();
     }
 
-async function exportDashboardExcel() {
+    async function exportDashboardExcel() {
         let dStrInput = document.getElementById('dash-date').value;
         if(!dStrInput) return showToast("Vui lòng chọn khoảng thời gian!", "danger");
         
@@ -2070,7 +2116,6 @@ async function exportDashboardExcel() {
         if(kitHy) kitchenNameArr.push('Hyatt');
         ws.getCell('A4').value = `Bếp: ${kitchenNameArr.join(' & ')} | Người xuất: ${currentUser.name} (${currentUser.mnv})`;
 
-        // Bỏ cột 'Ngày'
         let headers = ['STT'];
         selectedColsToExport.forEach(c => headers.push(c.name));
         let mealStartColIndex = headers.length + 1; 
@@ -2129,7 +2174,6 @@ async function exportDashboardExcel() {
                         if(showDi && vDi) sumDi++;
                         if(showOt && vOt) sumOt++;
 
-                        // Bỏ row.date
                         let rData = [cIdx++];
                         selectedColsToExport.forEach(c => rData.push(empObj[c.id] || row[c.id] || ''));
                         if(showBf) rData.push(vBf);
@@ -2259,7 +2303,6 @@ async function exportDashboardExcel() {
                         if(showDi && vDi) sumDi++;
                         if(showOt && vOt) sumOt++;
 
-                        // Bỏ row.date
                         tbodyHtml += `<tr><td style="text-align:center;">${cIdx++}</td>`;
                         selectedColsToExport.forEach(c => tbodyHtml += `<td>${empObj[c.id] || row[c.id] || ''}</td>`);
                         if(showBf) tbodyHtml += `<td style="text-align:center; font-weight:bold;">${vBf}</td>`;
@@ -2272,7 +2315,6 @@ async function exportDashboardExcel() {
             }
         });
 
-        // Bỏ cột Ngày ở Thead
         let thHtml = `<th>STT</th>`;
         selectedColsToExport.forEach(c => thHtml += `<th>${c.name}</th>`);
         if(showBf) thHtml += `<th>Sáng</th>`;
@@ -2281,7 +2323,6 @@ async function exportDashboardExcel() {
         if(showOt) thHtml += `<th>Tăng ca</th>`;
         thHtml += `<th>Ghi chú</th>`;
 
-        // Tính colspan = Tổng số cột đã chọn + cột STT
         let colspanForTotal = selectedColsToExport.length + 1;
         let sumRowHtml = `<tr><td colspan="${colspanForTotal}" style="text-align:right; font-weight:bold; color:red; font-size:14px;">TỔNG CỘNG:</td>`;
         if(showBf) sumRowHtml += `<td style="text-align:center; font-weight:bold; font-size:14px; color:blue;">${sumBf}</td>`;
@@ -2351,7 +2392,6 @@ async function exportDashboardExcel() {
         if(dpModal) dpModal.hide();
     }
 
-    // REPORTS (Tab)
     function renderReports() {
         let dStrInput = document.getElementById('rep-date').value; if(!dStrInput) return;
         let dStart, dEnd; if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
@@ -2403,7 +2443,7 @@ async function exportDashboardExcel() {
     
     function parseToDateObj(dStr) { let p = dStr.split('/'); return new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); }
 
-async function downloadExcelTemplate(mode = 'ro') {
+    async function downloadExcelTemplate(mode = 'ro') {
         let dStrInput = document.getElementById(mode + '-date').value; 
         if(!dStrInput) return showToast("Vui lòng chọn ngày để tải mẫu!", "danger");
         
@@ -2424,8 +2464,6 @@ async function downloadExcelTemplate(mode = 'ro') {
             let outWb = new ExcelJS.Workbook();
             await outWb.xlsx.load(buffer);
             
-            // =========================================================
-            // FIX LỖI "Shared Formula master must exist..." CỦA EXCELJS
             outWb.worksheets.forEach(ws => {
                 ws.eachRow((row) => {
                     row.eachCell((cell) => {
@@ -2435,7 +2473,6 @@ async function downloadExcelTemplate(mode = 'ro') {
                     });
                 });
             });
-            // =========================================================
 
             let wsTemplate = outWb.worksheets[0];
 
@@ -2446,12 +2483,10 @@ async function downloadExcelTemplate(mode = 'ro') {
                 
                 let newSheet = outWb.addWorksheet(sName);
                 
-                // Deep Clone: Copy Layout, Thuộc tính
                 newSheet.properties = JSON.parse(JSON.stringify(wsTemplate.properties || {}));
                 newSheet.pageSetup = JSON.parse(JSON.stringify(wsTemplate.pageSetup || {}));
                 newSheet.views = JSON.parse(JSON.stringify(wsTemplate.views || []));
 
-                // Deep Clone: Copy độ rộng cột
                 wsTemplate.columns.forEach((col, index) => {
                     let newCol = newSheet.getColumn(index + 1);
                     if(col.width) newCol.width = col.width;
@@ -2459,7 +2494,6 @@ async function downloadExcelTemplate(mode = 'ro') {
                     if(col.style) newCol.style = col.style;
                 });
 
-                // Deep Clone: Copy Header (dòng 1-6)
                 wsTemplate.eachRow({ includeEmpty: true }, (row, rowNumber) => {
                     if (rowNumber <= 6) {
                         let newRow = newSheet.getRow(rowNumber);
@@ -2478,11 +2512,11 @@ async function downloadExcelTemplate(mode = 'ro') {
                     });
                 }
                 
-let filteredEmps = employeeData.filter(e => {
-    return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
-        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
-        && sStatuses.includes(e.leaveStatus);
-});
+                let filteredEmps = employeeData.filter(e => {
+                    return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
+                        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
+                        && sStatuses.includes(e.leaveStatus);
+                });
                 
                 let uniqueDepts = [...new Set(filteredEmps.map(e => e.dept_cap2 || e.bp1))].filter(Boolean);
                 let deptPath = uniqueDepts.length === 1 && sDepts.length === 1 ? uniqueDepts[0] : "Cơ sở Phú Quốc";
@@ -2504,20 +2538,18 @@ let filteredEmps = employeeData.filter(e => {
                     let ot = (myMeal && myMeal.ot && myMeal.ot !== '0') ? myMeal.ot : "";
                     let note = myMeal ? (myMeal.note || "") : "";
                     
-                    // Đã bổ sung e.company vào đúng vị trí thứ 4
                     let rowVals = [ c++, e.mnv, e.name, e.company, e.bp_goc, e.dept_cap2, bf, lu, di, ot, note ];
                     
                     rowVals.forEach((val, i) => {
                         let cell = newSheet.getCell(currentRow, i + 1);
                         cell.value = val;
-                        cell.style = wsTemplate.getCell(7, i + 1).style; // Clone Format mẫu từ dòng 7
+                        cell.style = wsTemplate.getCell(7, i + 1).style; 
                     });
                     
                     currentRow++;
                 });
             }
             
-            // Xóa sheet mẫu
             outWb.removeWorksheet(wsTemplate.id);
 
             const outBuffer = await outWb.xlsx.writeBuffer();
@@ -2533,24 +2565,21 @@ let filteredEmps = employeeData.filter(e => {
         }
     }
 
-function handleExcelUpload(event, mode = 'ro') {
+    function handleExcelUpload(event, mode = 'ro') {
         let file = event.target.files[0]; if(!file) return; let reader = new FileReader();
         reader.onload = function(e) {
             try {
                 let data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'});
                 let validMeals = [], errors = [];
                 
-                // Các sheet cần bỏ qua (Sheet báo cáo)
                 const ignoreSheets = ["Hiệu chỉnh", "Thực tế", "Ăn Sang", "Ăn Trưa", "Ăn Tối", "Tăng Ca", "Tổng hợp"];
                 
                 workbook.SheetNames.forEach(sheetName => {
-                    // Bỏ qua sheet báo cáo và sheet template gốc
                     if (ignoreSheets.includes(sheetName) || sheetName.trim() === "dd.mm.yy") return;
 
                     let worksheet = workbook.Sheets[sheetName];
                     let jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                     
-                    // Đọc ngày ở ô B3 (Dòng 3, Cột 2) -> index: jsonData[2][1]
                     let dStrB3 = '';
                     if(jsonData[2] && jsonData[2][1]) {
                         let rawD = String(jsonData[2][1]).trim();
@@ -2559,18 +2588,15 @@ function handleExcelUpload(event, mode = 'ro') {
                     }
                     if (!dStrB3 || dStrB3.length < 8) return;
 
-                    // Đọc dữ liệu đăng ký/hiệu chỉnh từ dòng số 7 (index 6)
                     for(let i = 6; i < jsonData.length; i++) {
                         let row = jsonData[i]; 
                         
-                        // Cột Mã NV là cột B (index 1)
                         if(!row || row.length === 0 || !row[1]) continue; 
                         if(String(row[1]).includes("MÃ NV")) continue; 
                         
                         let mnv = String(row[1]).trim(), emp = employeeData.find(e => String(e.mnv) === mnv); 
                         if(!emp) { errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Không tìm thấy Mã NV.`); continue; }
                         
-                        // Map cột: G(6)=Sáng, H(7)=Trưa, I(8)=Tối, J(9)=Tăng ca, K(10)=Ghi chú
                         let bf = mapExcelMealValue(row[6]), 
                             lu = mapExcelMealValue(row[7]), 
                             di = mapExcelMealValue(row[8]), 
@@ -2605,7 +2631,8 @@ function handleExcelUpload(event, mode = 'ro') {
     }
     
     function mapExcelMealValue(val) { if(val === undefined || val === null || val === '') return '0'; let v = String(val).trim().toUpperCase(); if(v === '0' || v === 'O' || v === '-') return '0'; if(v === 'X' || v === 'Y') return v; return 'INVALID'; }
-async function exportReportsExcel() {
+
+    async function exportReportsExcel() {
         let dStrInput = document.getElementById('rep-date').value; 
         if(!dStrInput) return showToast("Vui lòng chọn ngày để xuất!", "danger");
         let datesToExport = getDatesInRange(dStrInput);
@@ -2627,8 +2654,6 @@ async function exportReportsExcel() {
             let wb = new ExcelJS.Workbook();
             await wb.xlsx.load(buffer);
 
-            // =========================================================
-            // BẺ GÃY LIÊN KẾT SHARED FORMULA ĐỂ CHỐNG CRASH EXCELJS
             wb.worksheets.forEach(ws => {
                 ws.eachRow((row) => {
                     row.eachCell((cell) => {
@@ -2638,7 +2663,6 @@ async function exportReportsExcel() {
                     });
                 });
             });
-            // =========================================================
             
             let wsReal = wb.getWorksheet('Thực tế') || wb.getWorksheet('Thực Tế');
             let wsAdj = wb.getWorksheet('Hiệu chỉnh') || wb.getWorksheet('Hiệu Chỉnh');
@@ -2649,17 +2673,16 @@ async function exportReportsExcel() {
             let wsSum = wb.getWorksheet('Tổng hợp') || wb.getWorksheet('Tổng Hợp');
             let wsDailyTemplate = wb.getWorksheet('dd.mm.yy'); 
             
-let filteredEmps = employeeData.filter(e => {
-    return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
-        && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
-        && sStatuses.includes(e.leaveStatus);
-});
+            let filteredEmps = employeeData.filter(e => {
+                return ((sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5)) 
+                    && ((sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc)) 
+                    && sStatuses.includes(e.leaveStatus);
+            });
             
             let realMap = {}, adjMap = {};
             dashboardData.forEach(r => realMap[`${r.mnv}_${r.date}`] = {...r});
             hcData.forEach(r => adjMap[`${r.mnv}_${r.date}`] = {...r});
 
-            // FIX LỖI "LÚC CÓ LÚC KHÔNG": LUÔN QUÉT CẢ THỰC TẾ & HIỆU CHỈNH ĐỂ KHÔNG BỎ SÓT NHÂN VIÊN
             let activeEmps = filteredEmps.filter(e => {
                 let hasMeal = false;
                 datesToExport.forEach(dStr => {
@@ -2679,9 +2702,6 @@ let filteredEmps = employeeData.filter(e => {
                 return hasMeal;
             });
 
-            // =========================================================
-            // 1. FILL SHEET THỰC TẾ & HIỆU CHỈNH
-            // =========================================================
             let rIdxAgg = 3;
             let realColSums = [0, 0, 0, 0, 0, 0, 0];
             let adjColSums = [0, 0, 0, 0, 0, 0, 0];
@@ -2721,8 +2741,6 @@ let filteredEmps = employeeData.filter(e => {
 
                     if (wsReal) {
                         rVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 1).value = v; });
-                        
-                        // Bổ sung ghi Cột J (Ngày) cho bảng Chênh lệch
                         wsReal.getCell(rIdxAgg, 10).value = dayDisp; 
                         dVals.forEach((v, i) => { wsReal.getCell(rIdxAgg, i + 11).value = v; });
                     }
@@ -2747,53 +2765,30 @@ let filteredEmps = employeeData.filter(e => {
 
             let p = appSettings.mealPrices || { bf: 0, lu: 0, di: 0, ot: 0 };
             
-            // GHI TỔNG, TIỀN VÀ XÓA CÔNG THỨC
             if (wsReal) {
-                realColSums.forEach((v, i) => { 
-                    let c = wsReal.getCell(35, i + 2); c.value = v; delete c.formula; 
-                });
-                
+                realColSums.forEach((v, i) => { let c = wsReal.getCell(35, i + 2); c.value = v; delete c.formula; });
                 let realMoney = [realColSums[0]*p.bf, realColSums[1]*p.lu, realColSums[2]*p.di, realColSums[3]*p.bf, realColSums[4]*p.lu, realColSums[5]*p.di, realColSums[6]*p.ot];
-                realMoney.forEach((v, i) => { 
-                    let c = wsReal.getCell(37, i + 2); c.value = v; delete c.formula; 
-                });
+                realMoney.forEach((v, i) => { let c = wsReal.getCell(37, i + 2); c.value = v; delete c.formula; });
                 
-                diffColSums.forEach((v, i) => { 
-                    let c = wsReal.getCell(41, i + 2); c.value = v; delete c.formula; 
-                });
-                
+                diffColSums.forEach((v, i) => { let c = wsReal.getCell(41, i + 2); c.value = v; delete c.formula; });
                 let diffMoney = [diffColSums[0]*p.bf, diffColSums[1]*p.lu, diffColSums[2]*p.di, diffColSums[3]*p.bf, diffColSums[4]*p.lu, diffColSums[5]*p.di, diffColSums[6]*p.ot];
-                diffMoney.forEach((v, i) => { 
-                    let c = wsReal.getCell(43, i + 2); c.value = v; delete c.formula; 
-                });
+                diffMoney.forEach((v, i) => { let c = wsReal.getCell(43, i + 2); c.value = v; delete c.formula; });
 
                 let c45_B = wsReal.getCell(45, 2); c45_B.value = diffColSums[0] + diffColSums[3]; delete c45_B.formula;
                 let c45_D = wsReal.getCell(45, 4); c45_D.value = diffColSums[1] + diffColSums[4]; delete c45_D.formula;
                 let c45_F = wsReal.getCell(45, 6); c45_F.value = diffColSums[2] + diffColSums[5]; delete c45_F.formula;
                 let c45_H = wsReal.getCell(45, 8); c45_H.value = diffColSums[6];                  delete c45_H.formula;
 
-                diffColSums.forEach((v, i) => { 
-                    let c = wsReal.getCell(35, i + 11); c.value = v; delete c.formula; 
-                });
-                diffMoney.forEach((v, i) => { 
-                    let c = wsReal.getCell(37, i + 11); c.value = v; delete c.formula; 
-                });
+                diffColSums.forEach((v, i) => { let c = wsReal.getCell(35, i + 11); c.value = v; delete c.formula; });
+                diffMoney.forEach((v, i) => { let c = wsReal.getCell(37, i + 11); c.value = v; delete c.formula; });
             }
 
             if (wsAdj) {
-                adjColSums.forEach((v, i) => { 
-                    let c = wsAdj.getCell(35, i + 2); c.value = v; delete c.formula; 
-                });
-                
+                adjColSums.forEach((v, i) => { let c = wsAdj.getCell(35, i + 2); c.value = v; delete c.formula; });
                 let adjMoney = [adjColSums[0]*p.bf, adjColSums[1]*p.lu, adjColSums[2]*p.di, adjColSums[3]*p.bf, adjColSums[4]*p.lu, adjColSums[5]*p.di, adjColSums[6]*p.ot];
-                adjMoney.forEach((v, i) => { 
-                    let c = wsAdj.getCell(37, i + 2); c.value = v; delete c.formula; 
-                });
+                adjMoney.forEach((v, i) => { let c = wsAdj.getCell(37, i + 2); c.value = v; delete c.formula; });
             }
 
-            // =========================================================
-            // 2. FILL SHEET ĂN SÁNG, TRƯA, TỐI, TĂNG CA
-            // =========================================================
             const fillMealDetailSheet = (ws, mealType) => {
                 if(!ws) return;
                 let price = p[mealType] || 0;
@@ -2853,9 +2848,6 @@ let filteredEmps = employeeData.filter(e => {
             fillMealDetailSheet(wsDi, 'di');
             fillMealDetailSheet(wsOt, 'ot');
 
-            // =========================================================
-            // 3. FILL SHEET TỔNG HỢP
-            // =========================================================
             if(wsSum) {
                 let rIdx = 7; 
                 let cIdx = 1;
@@ -2889,9 +2881,6 @@ let filteredEmps = employeeData.filter(e => {
                 });
             }
             
-            // =========================================================
-            // 4. FILL DD.MM.YY (DEEP CLONE TEMPLATE CHỐNG LỖI MẤT KẺ BẢNG)
-            // =========================================================
             if (wsDailyTemplate) {
                 datesToExport.forEach(dStr => {
                     let activeEmpsToday = activeEmps.filter(e => {
@@ -3291,7 +3280,7 @@ let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.include
         }
     }
 
-function renderUnregistered() {
+    function renderUnregistered() {
         let dStrInput = document.getElementById('unreg-date').value; if(!dStrInput) return;
         let dStart, dEnd;
         if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } 
@@ -3304,7 +3293,6 @@ function renderUnregistered() {
             registeredMnvSet = new Set(), 
             mealMapForDate = {};
 
-        // ĐỌC GIÁ TRỊ TỪ DROPDOWN ĐỂ NHÓM BIỂU ĐỒ
         let groupByField = document.getElementById('unreg-group-by') ? document.getElementById('unreg-group-by').value : 'dept_cap2';
 
         dashboardData.forEach(row => {
@@ -3318,7 +3306,6 @@ function renderUnregistered() {
             let matchDept = (sDepts.length === 0) || sDepts.includes(emp.dv) || sDepts.includes(emp.bp1) || sDepts.includes(emp.dept_cap2) || sDepts.includes(emp.bp3) || sDepts.includes(emp.bp4) || sDepts.includes(emp.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(emp.bp_goc);
             
-            // GÁN NHÓM THEO THUỘC TÍNH NGƯỜI DÙNG CHỌN
             let dept = emp[groupByField] ? emp[groupByField] : 'Khác';
 
             if (matchDept && matchBpGoc) {
@@ -3335,7 +3322,7 @@ function renderUnregistered() {
         renderUnregChart(unregCounts, totalCounts);
     }
 
-function renderUnregChart(unregCounts, totalCounts) {
+    function renderUnregChart(unregCounts, totalCounts) {
         let canvas = document.getElementById('unregChart');
         let ctx = canvas.getContext('2d'); 
         if (unregChartInstance) unregChartInstance.destroy();
@@ -3344,20 +3331,13 @@ function renderUnregChart(unregCounts, totalCounts) {
         let registeredData = labels.map(l => (totalCounts[l] || 0) - (unregCounts[l] || 0));
         let unregData = labels.map(l => unregCounts[l] || 0);
 
-        // =========================================================
-        // TỰ ĐỘNG CĂN CHỈNH CHIỀU CAO VỪA VỚI MÀN HÌNH HIỂN THỊ
-        // Mỗi thanh tiến trình cần ít nhất 40px không gian để không bị ép nhỏ
         let minHeight = labels.length * 40 + 150; 
-        // Lấy mức lớn hơn giữa 70% chiều cao màn hình (70vh) và chiều cao tối thiểu cần thiết
         canvas.parentElement.style.height = `max(70vh, ${minHeight}px)`;
-        // =========================================================
 
-        // 1. TÍNH TOÁN TỔNG TIẾN ĐỘ CHO TOÀN BỘ BIỂU ĐỒ
         let totalReg = registeredData.reduce((a, b) => a + b, 0);
         let totalAll = labels.map(l => totalCounts[l] || 0).reduce((a, b) => a + b, 0);
         let totalPct = totalAll > 0 ? Math.round((totalReg / totalAll) * 100) : 0;
 
-        // 2. TẠO PLUGIN VẼ CHỮ TRỰC TIẾP LÊN CUỐI MỖI THANH TIẾN TRÌNH
         const progressLabelPlugin = {
             id: 'progressLabelPlugin',
             afterDatasetsDraw(chart) {
@@ -3366,7 +3346,6 @@ function renderUnregChart(unregCounts, totalCounts) {
                 ctx.font = 'bold 12px Arial';
                 ctx.textBaseline = 'middle';
                 
-                // Lấy tọa độ của lớp stacked cuối cùng (lớp Chưa đăng ký)
                 let meta = chart.getDatasetMeta(1); 
                 
                 data.labels.forEach((label, index) => {
@@ -3383,8 +3362,7 @@ function renderUnregChart(unregCounts, totalCounts) {
                         let xPos = meta.data[index].x; 
                         
                         ctx.textAlign = 'left';
-                        ctx.fillStyle = '#000000'; // Màu chữ đen
-                        // Vẽ text ngay sát cạnh phải của thanh tiến trình
+                        ctx.fillStyle = '#000000'; 
                         ctx.fillText(text, xPos + 8, yPos); 
                     }
                 });
@@ -3392,7 +3370,6 @@ function renderUnregChart(unregCounts, totalCounts) {
             }
         };
 
-        // 3. VẼ BIỂU ĐỒ PROGRESS BAR
         unregChartInstance = new Chart(ctx, { 
             type: 'bar', 
             data: { 
@@ -3401,7 +3378,7 @@ function renderUnregChart(unregCounts, totalCounts) {
                     { 
                         label: 'Đã hoàn thành', 
                         data: registeredData, 
-                        backgroundColor: '#00a651', // Màu xanh BIM Group
+                        backgroundColor: '#00a651', 
                         borderColor: '#007a3b',
                         borderWidth: 1,
                         barPercentage: 0.7 
@@ -3409,7 +3386,7 @@ function renderUnregChart(unregCounts, totalCounts) {
                     { 
                         label: 'Chưa đăng ký', 
                         data: unregData, 
-                        backgroundColor: '#ffffff', // Màu trắng
+                        backgroundColor: '#ffffff', 
                         borderColor: '#adb5bd', 
                         borderWidth: 1,
                         barPercentage: 0.7
@@ -3422,7 +3399,6 @@ function renderUnregChart(unregCounts, totalCounts) {
                 responsive: true, 
                 maintainAspectRatio: false, 
                 layout: {
-                    // Chừa khoảng trống 100px bên phải để số liệu không bị lẹm
                     padding: { right: 100 } 
                 },
                 scales: { 
@@ -3485,7 +3461,7 @@ function renderUnregChart(unregCounts, totalCounts) {
         let ws = XLSX.utils.aoa_to_sheet(exportData); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "ChiTiet"); XLSX.writeFile(wb, `DS_${currentUnregDept}.xlsx`);
     }
 
-async function exportEmployeesExcel() {
+    async function exportEmployeesExcel() {
         showToast("Đang tạo file Excel Nhân sự...", "info");
         const TEMPLATE_URL = 'https://raw.githubusercontent.com/trunghieuappsheet-cell/BMMS/main/upload_dsnv_dd.mm.yy.xlsx';
         
@@ -3497,8 +3473,6 @@ async function exportEmployeesExcel() {
             let wb = new ExcelJS.Workbook();
             await wb.xlsx.load(buffer);
             
-            // =========================================================
-            // FIX LỖI "Shared Formula master must exist..." CỦA EXCELJS
             wb.worksheets.forEach(ws => {
                 ws.eachRow((row) => {
                     row.eachCell((cell) => {
@@ -3508,42 +3482,21 @@ async function exportEmployeesExcel() {
                     });
                 });
             });
-            // =========================================================
             
-            let ws = wb.worksheets[0]; // Lấy sheet đầu tiên
+            let ws = wb.worksheets[0]; 
             
-            let rIdx = 5; // Bắt đầu ghi từ dòng số 5 theo mẫu
+            let rIdx = 5; 
             let cIdx = 1;
             
             employeeData.forEach(e => {
                 let rowVals = [
-                    cIdx++, 
-                    e.mnv, 
-                    e.name, 
-                    e.gender, 
-                    e.phone, 
-                    e.cccd, 
-                    e.email, 
-                    e.dv, 
-                    e.bp1, 
-                    e.dept_cap2, 
-                    e.bp3, 
-                    e.bp4, 
-                    e.bp5, 
-                    e.bp_goc, 
-                    e.company, 
-                    e.title, 
-                    e.joinDate, 
-                    e.leaveStatus, 
-                    e.leaveDate, 
-                    e.role
+                    cIdx++, e.mnv, e.name, e.gender, e.phone, e.cccd, e.email, e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5, e.bp_goc, e.company, e.title, e.joinDate, e.leaveStatus, e.leaveDate, e.role
                 ];
                 
-                // Chỉ gán giá trị và copy định dạng từ dòng 5
                 rowVals.forEach((val, i) => {
                     let cell = ws.getCell(rIdx, i + 1);
                     cell.value = val;
-                    cell.style = ws.getCell(5, i + 1).style; // Copy Style
+                    cell.style = ws.getCell(5, i + 1).style; 
                 });
                 
                 rIdx++;
@@ -3555,7 +3508,6 @@ async function exportEmployeesExcel() {
 
         } catch (error) {
             console.error("Lỗi tạo file excel:", error);
-            // Fallback sử dụng SheetJS nếu tải file mẫu bị lỗi mạng
             let exportData = [ 
                 ["DANH SÁCH NHÂN SỰ TOÀN HỆ THỐNG"], 
                 ["Ngày xuất:", new Date().toLocaleDateString('vi-VN')], 
@@ -3580,10 +3532,8 @@ async function exportEmployeesExcel() {
                 let jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                 let empList = [];
                 
-                // Đọc từ dòng 5 (index = 4)
                 for(let i = 4; i < jsonData.length; i++) { 
                     let row = jsonData[i]; 
-                    // Kiểm tra nếu dòng rỗng hoặc không có cột Mã NV (Cột B = index 1)
                     if(!row || row.length === 0 || !row[1]) continue;
                     
                     empList.push({
@@ -3864,4 +3814,4 @@ async function exportEmployeesExcel() {
     }
 </script>
 </body>
-</html>
+</html>	
