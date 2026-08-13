@@ -856,15 +856,33 @@
     </div>
 </div>
 
-<!-- Modal Copy Ngày -->
-<div class="modal fade" id="copyDateModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold"><i class="fa-solid fa-copy"></i> Copy Ngày Ăn</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-3">
-                <label class="fw-bold small text-muted">Copy cho ngày</label>
-                <input type="text" id="copy-target-date" class="form-control flatpickr-date mt-2 text-center fw-bold" placeholder="dd/mm/yyyy">
-                <button class="btn btn-bim w-100 fw-bold shadow text-white mt-3" onclick="submitCopyDate()">Xác Nhận</button>
+<!-- Modal Thông tin Tài khoản -->
+<div class="modal fade" id="accountInfoModal" tabindex="-1">
+    <!-- Thêm mt-5 và pt-3 để đẩy toàn bộ modal xuống -->
+    <div class="modal-dialog mt-5 pt-3">
+        <!-- Thêm mt-4 để chừa không gian cho Avatar trồi lên không bị lẹm -->
+        <div class="modal-content profile-card shadow-lg mt-4">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-0 text-center">
+                <div class="profile-avatar-container shadow-sm mb-3">
+                    <img id="acc-avatar" class="profile-avatar" src="" style="display: none;" referrerpolicy="no-referrer">
+                    <i id="acc-avatar-icon" class="fa-solid fa-circle-user text-secondary" style="font-size: 140px; display: inline-block;"></i>
+                    <div class="btn-cam" onclick="document.getElementById('avatar-upload').click()"><i class="fa-solid fa-camera"></i></div>
+                    <input type="file" id="avatar-upload" accept="image/*" class="d-none" onchange="handleAvatarSelect(event)">
+                </div>
+                <h4 class="fw-bold text-dark mb-0" id="acc-name">Họ và Tên</h4>
+                <p class="text-muted small fw-bold mb-3" id="acc-title-role">Chức danh / Quyền</p>
+                
+                <div class="text-start bg-white p-3 rounded shadow-sm small">
+                    <div class="mb-2"><i class="fa-solid fa-id-badge text-bim me-2"></i><span class="text-muted">Mã NV:</span> <span class="fw-bold float-end" id="acc-mnv">-</span></div>
+                    <div class="mb-2"><i class="fa-solid fa-phone text-bim me-2"></i><span class="text-muted">SĐT:</span> <span class="fw-bold float-end" id="acc-phone">-</span></div>
+                    <div class="mb-2"><i class="fa-solid fa-envelope text-bim me-2"></i><span class="text-muted">Email:</span> <span class="fw-bold float-end" id="acc-email">-</span></div>
+                    <div class="mb-2"><i class="fa-solid fa-building text-bim me-2"></i><span class="text-muted">Công ty:</span> <span class="fw-bold float-end" id="acc-company">-</span></div>
+                    <hr class="my-2">
+                    <div class="mb-1"><i class="fa-solid fa-sitemap text-bim me-2"></i><span class="text-muted">Đơn vị công tác:</span><br><span class="fw-bold text-dark" id="acc-dept">-</span></div>
+                </div>
             </div>
         </div>
     </div>
