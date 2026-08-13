@@ -193,7 +193,7 @@
                 
                 <!-- BỔ SUNG NÚT ĐỒNG BỘ THỦ CÔNG NHƯ YÊU CẦU -->
                 <div class="mx-1 position-relative">
-                    <button class="btn btn-outline-primary btn-sm rounded-circle position-relative" onclick="manualSyncNow()" title="Đồng bộ dữ liệu" style="width: 35px; height: 35px;">
+                    <button class="btn btn-outline-success btn-sm rounded-circle position-relative" onclick="manualSyncNow()" title="Đồng bộ dữ liệu" style="width: 35px; height: 35px;">
                         <i id="manual-sync-icon" class="fa-solid fa-rotate"></i>
                         <span id="manual-sync-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em; display: none;">0</span>
                     </button>
@@ -1623,12 +1623,18 @@ let currentCycleOffset = 0, searchTimeout, realtimeTimer;
         }, 200);
     }
     
-    function filterPermUserTable() {
-        let val = removeAccents(document.getElementById('perm-user-search').value);
+function filterPermUserTable() {
+        // Tối ưu thuật toán tìm kiếm: Không dùng innerText để chống Lag
+        let val = removeAccents(document.getElementById('perm-user-search').value).toLowerCase();
         let trs = document.getElementById('perm-user-tbody').getElementsByTagName('tr');
-        for(let tr of trs) {
-            let text = removeAccents(tr.innerText);
-            tr.style.display = text.includes(val) ? '' : 'none';
+        for(let i = 0; i < trs.length; i++) {
+            let tr = trs[i];
+            let searchData = tr.getAttribute('data-search') || '';
+            if(searchData.includes(val)) {
+                tr.style.display = '';
+            } else {
+                tr.style.display = 'none';
+            }
         }
     }
     
@@ -1662,19 +1668,50 @@ let currentCycleOffset = 0, searchTimeout, realtimeTimer;
             document.getElementById('sync-nhanvien').value = s['Nhan_Vien'] !== undefined ? s['Nhan_Vien'] : 0;
         }
         
-        if(document.getElementById('perm-user-tbody')) {
+if(document.getElementById('perm-user-tbody')) {
             let permUserTbody = document.getElementById('perm-user-tbody');
             let html = '';
-            employeeData.forEach(e => {
+            
+            // SẮP XẾP NHÂN VIÊN THEO THỨ TỰ QUYỀN
+            let sortedEmps = [...employeeData].sort((a, b) => {
+                const roleOrder = { 'Admin_full': 1, 'Admin_BP': 2, 'Bep_An': 3, 'Nhan_Vien': 4 };
+                let orderA = roleOrder[a.role] || 99;
+                let orderB = roleOrder[b.role] || 99;
+                
+                // Nếu quyền khác nhau, xếp theo thứ tự quy định
+                if (orderA !== orderB) return orderA - orderB;
+                // Nếu cùng quyền, xếp theo Tên (Alphabet)
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+sortedEmps.forEach(e => {
                 let escapedName = e.name ? e.name.replace(/'/g, "\\'") : '';
-                html += `<tr onclick="selectPermUserFromTable('${e.mnv}', '${escapedName}')">
-                            <td><b>${e.mnv}</b> - ${e.name}</td>
-                            <td>${e.title || ''}</td>
-                            <td><span class="badge bg-info text-dark">${e.role || 'Trống'}</span></td>
+                // Chuẩn bị chuỗi dữ liệu tìm kiếm (data-search) để tăng tốc độ Search
+                let searchString = removeAccents((e.mnv || '') + ' ' + (e.name || '')).toLowerCase();
+                
+                // TÔ MÀU BADGE CHUYÊN NGHIỆP CHO TỪNG QUYỀN
+                let badgeClass = 'bg-light text-secondary border';
+                if(e.role === 'Admin_full') badgeClass = 'bg-danger text-white';
+                else if(e.role === 'Admin_BP') badgeClass = 'bg-warning text-dark';
+                else if(e.role === 'Hành chính bộ phận') badgeClass = 'bg-primary text-white';
+                else if(e.role === 'Bep_An') badgeClass = 'bg-success text-white';
+                else if(e.role === 'Nhan_Vien') badgeClass = 'bg-info text-dark';
+
+                html += `<tr onclick="selectPermUserFromTable('${e.mnv}', '${escapedName}')" data-search="${searchString}">
+                            <td class="align-middle text-nowrap">
+                                <span class="fw-bold text-success">${e.mnv}</span>
+                                <span class="text-muted mx-1">-</span>
+                                <span class="fw-bold text-dark">${e.name}</span>
+                            </td>
+                            <td class="text-muted small align-middle text-truncate" style="max-width: 150px;">${e.title || '-'}</td>
+                            <td class="text-center align-middle">
+                                <span class="badge ${badgeClass} shadow-sm px-2 py-1">${e.role || 'Chưa cấp'}</span>
+                            </td>
                          </tr>`;
             });
             permUserTbody.innerHTML = html;
             
+            // Xây dựng cây bộ phận (Phần này giữ nguyên)
             let tree = {}; 
             employeeData.forEach(e => { let path = [e.dv, e.bp1, e.dept_cap2, e.bp3, e.bp4, e.bp5].filter(Boolean); if(path.length === 0) path = ['Chưa phân bổ']; let current = tree; path.forEach(node => { if(!current[node]) current[node] = {}; current = current[node]; }); }); 
             let treeHtml = buildTreeHTML(tree, 0, 'perm').replace(/class="tree-cb"/g, 'class="tree-cb perm-tree-cb form-check-input"');
