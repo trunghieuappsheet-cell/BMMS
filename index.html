@@ -60,19 +60,34 @@
         .row-sunday td { background-color: #ffe6e6 !important; }
         .row-holiday td { background-color: #fff3cd !important; border-top: 2px solid #ffc107 !important; border-bottom: 2px solid #ffc107 !important; }
         .row-locked td { background-color: #e9ecef !important; opacity: 0.6; pointer-events: none;}
-        .row-resigned td { background-color: #f8f9fa !important; opacity: 0.6; }
+        .row-resigned td { background-color: #f8f9fa !important; opacity: 0.6; pointer-events: none;}
         
         .calendar-wrapper { width: 100%; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
         .calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; text-align: center; font-weight: bold; color: #444; }
         .calendar-header .sun { color: #d32f2f; }
         .vcal-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;}
         
+        /* Bổ sung class today cho ô Lịch */
         .vcal-box { width: 100%; min-height: 95px; padding: 5px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; background: #fff; user-select: none; display: flex; flex-direction: column; justify-content: start; align-items: center; position: relative;}
         .vcal-box:hover:not(.locked):not(.empty) { border-color: var(--bim-green); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
         .vcal-box.locked { background: #e9ecef; opacity: 0.5; }
         .vcal-box.empty { background: transparent; border: none; pointer-events: none; }
         .vcal-box.sun { background: #fff0f0; color: #d32f2f; border-color: #ffcdd2;}
         .vcal-box.selected { border: 2px solid var(--bim-green); background: #e6f2eb; box-shadow: 0 0 8px rgba(0,105,60,0.4); transform: scale(1.05); z-index: 2;}
+        
+        /* Viền xanh BIM cho ngày hôm nay trong lịch */
+        .vcal-box.today::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 3px solid var(--bim-green);
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 1;
+        }
 
         .meal-info { width: 100%; display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
         .meal-info .badge { font-size: 0.7em; padding: 3px 2px; border-radius: 4px; width: 100%; text-align: center; border-width: 1px; border-style: solid;}
@@ -123,6 +138,14 @@
         .profile-avatar { width: 140px; height: 140px; object-fit: cover; border-radius: 50%; border: 3px solid var(--bim-green); }
         .btn-cam { position: absolute; bottom: 5px; right: 5px; background: var(--bim-green); color: white; border: 2px solid white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
         .btn-cam:hover { transform: scale(1.1); }
+        
+        /* CSS cho phân trang */
+        .pagination-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; font-size: 0.9em; }
+        .pagination-container select, .pagination-container input { border: 1px solid #ced4da; border-radius: 4px; padding: 3px 6px; outline: none; }
+        .pagination-container input { width: 50px; text-align: center; }
+        .pagination-container button { background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 3px 8px; cursor: pointer; color: #333; }
+        .pagination-container button:hover:not(:disabled) { background: #e2e6ea; }
+        .pagination-container button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -308,7 +331,7 @@
                                     <div class="col-6 col-md-3 ot-col"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #dc3545;"><i class="fa-solid fa-hotdog"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TĂNG CA</h6><div class="dash-stat" id="mc-ot">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="mc-ot-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="mc-ot-hy" class="fs-5">0</span></span></div></div></div>
                                 </div>
 
-                                <div class="table-responsive-stretch">
+                                <div class="table-responsive-stretch mb-0">
                                     <table class="table table-bordered table-hover mb-0 align-middle text-center text-nowrap">
                                         <thead class="table-light position-sticky top-0 z-1 shadow-sm" id="reg-grid-thead">
                                             <tr>
@@ -323,6 +346,7 @@
                                         <tbody id="reg-grid-body"></tbody>
                                     </table>
                                 </div>
+                                <div id="pagination-mc" class="pagination-container"></div>
                             </div>
                         </div>
                     </div>
@@ -366,15 +390,15 @@
                             <span class="badge border border-primary text-primary bg-primary bg-opacity-10 shadow-sm fs-6 px-3">X: Bãi Trường</span>
                             <span class="badge border border-danger text-danger bg-danger bg-opacity-10 shadow-sm fs-6 px-3">Y: Hyatt</span>
                         </div>
-                        <div class="table-responsive-stretch mt-2">
+                        <div class="table-responsive-stretch mt-2 mb-0">
                             <table class="table table-bordered table-hover mb-0 align-middle text-center text-nowrap" id="table-ro">
                                 <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="ro-thead"></tr></thead>
                                 <tbody id="ro-grid-body"></tbody>
                             </table>
                         </div>
+                        <div id="pagination-ro" class="pagination-container"></div>
                     </div>
-                    
-                    <!-- TAB CHƯA ĐĂNG KÝ -->
+<!-- TAB CHƯA ĐĂNG KÝ -->
                     <div class="tab-pane fade" id="reg-unregistered">
                         <div class="toolbar-filter">
                             <input type="text" id="unreg-search" class="form-control form-control-sm border-primary filter-item search-input" placeholder="Tìm tên, mã NV..." onkeyup="debounceSearch(renderUnregistered, 300)">
@@ -466,12 +490,13 @@
                     <div class="col-6 col-md-3 ot-col"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #dc3545;"><i class="fa-solid fa-hotdog"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TĂNG CA</h6><div class="dash-stat" id="rep-ot">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-ot-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-ot-hy" class="fs-5">0</span></span></div></div></div>
                 </div>
 
-                <div class="table-responsive-stretch shadow-sm border-0">
+                <div class="table-responsive-stretch shadow-sm border-0 mb-0">
                     <table class="table table-hover mb-0 align-middle text-nowrap" id="table-rep" style="font-size: 0.9em;">
                         <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="rep-thead"></tr></thead>
                         <tbody id="rep-table-body"></tbody>
                     </table>
                 </div>
+                <div id="pagination-rep" class="pagination-container"></div>
             </div>
 
             <!-- TAB 3: DASHBOARD -->
@@ -512,12 +537,13 @@
                     <div class="col-6 col-md-3 ot-col"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #dc3545;"><i class="fa-solid fa-hotdog"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TĂNG CA</h6><div class="dash-stat" id="dash-ot">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="dash-ot-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="dash-ot-hy" class="fs-5">0</span></span></div></div></div>
                 </div>
 
-                <div class="table-responsive-stretch shadow-sm border-0">
+                <div class="table-responsive-stretch shadow-sm border-0 mb-0">
                     <table class="table table-hover mb-0 align-middle text-nowrap" id="table-dash" style="font-size: 0.9em;">
                         <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="dash-thead"></tr></thead>
                         <tbody id="dash-table-body"></tbody>
                     </table>
                 </div>
+                <div id="pagination-dash" class="pagination-container"></div>
             </div>
 
             <!-- TAB 4: HIỆU CHỈNH CƠM (MỚI) -->
@@ -558,12 +584,13 @@
                     <span class="badge border border-primary text-primary bg-primary bg-opacity-10 shadow-sm fs-6 px-3">X: Bãi Trường</span>
                     <span class="badge border border-danger text-danger bg-danger bg-opacity-10 shadow-sm fs-6 px-3">Y: Hyatt</span>
                 </div>
-                <div class="table-responsive-stretch mt-2">
+                <div class="table-responsive-stretch mt-2 mb-0">
                     <table class="table table-bordered table-hover mb-0 align-middle text-center text-nowrap" id="table-adj">
                         <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="adj-thead"></tr></thead>
                         <tbody id="adj-grid-body"></tbody>
                     </table>
                 </div>
+                <div id="pagination-adj" class="pagination-container"></div>
             </div>
 <!-- TAB 5: QUẢN LÝ NHÂN SỰ -->
             <div id="view-employees" class="page-view d-none">
@@ -605,12 +632,13 @@
                 </div>
                 <span class="text-muted small mb-2 d-block" id="hint-undo" style="display:none;"><i class="fa-solid fa-check text-success"></i> Đã kích hoạt Sửa tự động! Click và sửa thẳng lên bảng.</span>
                 
-                <div class="table-responsive-stretch shadow-sm border-0">
+                <div class="table-responsive-stretch shadow-sm border-0 mb-0">
                     <table id="emp-table" class="table table-hover mb-0 align-middle text-nowrap mode-user" style="font-size: 0.9em;">
                         <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="emp-thead"></tr></thead>
                         <tbody id="emp-table-body"></tbody>
                     </table>
                 </div>
+                <div id="pagination-emp" class="pagination-container"></div>
             </div>
             
             <!-- TAB 6: THIẾT LẬP (ADMIN ONLY) -->
@@ -1112,7 +1140,45 @@
 <input type="file" id="excel-upload-input" accept=".xlsx, .xls" class="d-none" onchange="handleExcelUpload(event, 'ro')">
 <input type="file" id="hc-upload-input" accept=".xlsx, .xls" class="d-none" onchange="handleExcelUpload(event, 'adj')">
 <input type="file" id="emp-excel-upload-input" accept=".xlsx, .xls" class="d-none" onchange="handleEmployeeExcelUpload(event)">
-<div id="toast-container"></div>			
+<div id="toast-container"></div>
+<!-- Modal Xác nhận Dữ liệu Upload / Copy -->
+<div class="modal fade" id="previewChangesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-clipboard-check"></i> Xác nhận dữ liệu cập nhật</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p class="small text-muted mb-2">
+                    Các dữ liệu bị <span class="text-danger fw-bold"><i class="fa-solid fa-lock"></i> KHÓA</span> sẽ bị bỏ qua và giữ nguyên như cũ. 
+                    Chỉ lưu những dữ liệu <span class="text-success fw-bold">HỢP LỆ (Tô Xanh)</span>.
+                </p>
+                <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+                    <table class="table table-bordered table-hover text-center align-middle text-nowrap table-sm" style="font-size: 0.9em;">
+                        <thead class="table-light position-sticky top-0 z-1 shadow-sm">
+                            <tr>
+                                <th>Mã NV</th>
+                                <th class="text-start">Họ Tên</th>
+                                <th>Ngày</th>
+                                <th>Sáng</th>
+                                <th>Trưa</th>
+                                <th>Chiều</th>
+                                <th class="ot-col">Tăng ca</th>
+                                <th class="text-start">Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-changes-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer p-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> Hủy bỏ</button>
+                <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="confirmPendingChanges()"><i class="fa-solid fa-save"></i> TIẾP TỤC LƯU</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyCzASAa-o6NFcEM7WOZrdW-_1zYK81taxMtyqaEzDj-bf_772xmxGcqZ-knqrZo3bz/exec';
     let currentUser = null, dashboardData = [], employeeData = [], holidaysData = [], appSettings = {}, hcData = [];
@@ -1126,20 +1192,28 @@
 
     let apiQueue = [], isSyncing = false, simInt;
 
+    // STATE PHÂN TRANG
+    let pageState = {
+        mc: { page: 1, limit: 50 },
+        ro: { page: 1, limit: 50 },
+        adj: { page: 1, limit: 50 },
+        rep: { page: 1, limit: 50 },
+        dash: { page: 1, limit: 50 },
+        emp: { page: 1, limit: 50 }
+    };
+
     // 1. TẠO ID DUY NHẤT CHO MỖI REQUEST (Chống trùng lặp)
     function generateReqId() {
         return 'REQ_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-// 2. HÀM GỌI API TRUNG TÂM
+    // 2. HÀM GỌI API TRUNG TÂM
     async function fetchAPI(payload) {
-        // Tự động gán reqId nếu chưa có
         if (!payload.reqId) payload.reqId = generateReqId();
-        
         let response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // Đảm bảo là Simple Request
+                'Content-Type': 'text/plain;charset=utf-8' 
             },
             body: JSON.stringify(payload)
         });
@@ -1189,7 +1263,6 @@
         while (apiQueue.length > 0) { 
             let currentTask = apiQueue[0];
             try { 
-                // Sử dụng hàm trung tâm mới
                 let data = await fetchAPI(currentTask.payload); 
                 apiQueue.shift(); 
                 updateSyncBadge();
@@ -1250,6 +1323,45 @@
                 else this.value = '0';
             });
         });
+    }
+
+    // HÀM RENDER PHÂN TRANG (PAGINATION)
+    function renderPagination(prefix, totalRows, renderCallback) {
+        let container = document.getElementById('pagination-' + prefix);
+        if(!container) return;
+        let limit = pageState[prefix].limit;
+        let page = pageState[prefix].page;
+        if(limit === 'ALL') limit = totalRows;
+        let totalPages = limit > 0 ? Math.ceil(totalRows / limit) : 1;
+        if (page > totalPages) page = totalPages;
+        if (page < 1) page = 1;
+        pageState[prefix].page = page;
+
+        if (totalRows === 0) {
+            container.innerHTML = ''; return;
+        }
+
+        let html = `
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-muted fw-bold">Hiển thị:</span>
+                <select class="form-select form-select-sm w-auto border-secondary fw-bold" onchange="pageState['${prefix}'].limit = this.value === 'ALL' ? 'ALL' : parseInt(this.value); pageState['${prefix}'].page = 1; ${renderCallback.name}();">
+                    <option value="50" ${limit === 50 ? 'selected' : ''}>50</option>
+                    <option value="200" ${limit === 200 ? 'selected' : ''}>200</option>
+                    <option value="500" ${limit === 500 ? 'selected' : ''}>500</option>
+                    <option value="ALL" ${pageState[prefix].limit === 'ALL' ? 'selected' : ''}>Tất cả</option>
+                </select>
+                <span class="text-muted ms-2 fw-bold">Dòng: ${(page - 1) * limit + 1} - ${Math.min(page * limit, totalRows)} / ${totalRows}</span>
+                <div class="ms-auto d-flex align-items-center gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="pageState['${prefix}'].page=1; ${renderCallback.name}();" ${page === 1 ? 'disabled' : ''} title="Trang đầu"><i class="fa-solid fa-angles-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="pageState['${prefix}'].page--; ${renderCallback.name}();" ${page === 1 ? 'disabled' : ''} title="Trang trước"><i class="fa-solid fa-angle-left"></i></button>
+                    <input type="number" class="form-control form-control-sm text-center fw-bold border-secondary" style="width: 60px;" value="${page}" onchange="let p = parseInt(this.value); if(p>=1 && p<=${totalPages}) { pageState['${prefix}'].page = p; ${renderCallback.name}(); } else { this.value = ${page}; }">
+                    <span class="text-muted fw-bold">/ ${totalPages}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="pageState['${prefix}'].page++; ${renderCallback.name}();" ${page === totalPages ? 'disabled' : ''} title="Trang sau"><i class="fa-solid fa-angle-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="pageState['${prefix}'].page=${totalPages}; ${renderCallback.name}();" ${page === totalPages ? 'disabled' : ''} title="Trang cuối"><i class="fa-solid fa-angles-right"></i></button>
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
     }
 
     function openAccountInfoModal() {
@@ -1395,7 +1507,7 @@
         ['dash', 'unreg', 'ro', 'mc', 'adj', 'rep'].forEach(prefix => { 
             let el = document.getElementById(`${prefix}-date`); 
             if(el) { 
-                fpInstances[prefix] = flatpickr(el, { mode: "single", dateFormat: "d/m/Y", allowInput: true, onChange: function() { setTimeout(() => { if(prefix==='dash') renderDashboard(); if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') renderRegOthersGrid(); if(prefix==='mc') renderRegGrid(); if(prefix==='adj') renderAdjustGrid(); if(prefix==='rep') renderReports(); }, 10); } }); 
+                fpInstances[prefix] = flatpickr(el, { mode: "single", dateFormat: "d/m/Y", allowInput: true, onChange: function() { setTimeout(() => { if(prefix==='dash') { pageState.dash.page = 1; renderDashboard(); } if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') { pageState.ro.page = 1; renderRegOthersGrid(); } if(prefix==='mc') { pageState.mc.page = 1; renderRegGrid(); } if(prefix==='adj') { pageState.adj.page = 1; renderAdjustGrid(); } if(prefix==='rep') { pageState.rep.page = 1; renderReports(); } }, 10); } }); 
             } 
         }); 
     }
@@ -1409,7 +1521,7 @@
         if(type === 'today') { fp.set('mode', 'single'); fp.setDate(new Date(), false); } 
         else if (type === 'cycle') { fp.set('mode', 'range'); let c = getCycleDates(window.cycleOffsets[prefix]); fp.setDate([c.start, c.end], false); } 
         else if (type === 'custom') { fp.set('mode', 'range'); let td = new Date(); fp.setDate([new Date(td.getFullYear(), td.getMonth(), 1), new Date(td.getFullYear(), td.getMonth()+1, 0)], false); } 
-        setTimeout(() => { if(prefix==='dash') renderDashboard(); if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') renderRegOthersGrid(); if(prefix==='mc') renderRegGrid(); if(prefix==='adj') renderAdjustGrid(); if(prefix==='rep') renderReports(); }, 10); 
+        setTimeout(() => { if(prefix==='dash') { pageState.dash.page = 1; renderDashboard(); } if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') { pageState.ro.page = 1; renderRegOthersGrid(); } if(prefix==='mc') { pageState.mc.page = 1; renderRegGrid(); } if(prefix==='adj') { pageState.adj.page = 1; renderAdjustGrid(); } if(prefix==='rep') { pageState.rep.page = 1; renderReports(); } }, 10); 
     }
 
     function changeDateStep(prefix, dir) { 
@@ -1423,7 +1535,7 @@
             window.cycleOffsets[prefix] = (window.cycleOffsets[prefix] || 0) + dir; 
             let c = getCycleDates(window.cycleOffsets[prefix]); fp.setDate([c.start, c.end], false); 
         } 
-        setTimeout(() => { if(prefix==='dash') renderDashboard(); if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') renderRegOthersGrid(); if(prefix==='mc') renderRegGrid(); if(prefix==='adj') renderAdjustGrid(); if(prefix==='rep') renderReports(); }, 10); 
+        setTimeout(() => { if(prefix==='dash') { pageState.dash.page = 1; renderDashboard(); } if(prefix==='unreg') renderUnregistered(); if(prefix==='ro') { pageState.ro.page = 1; renderRegOthersGrid(); } if(prefix==='mc') { pageState.mc.page = 1; renderRegGrid(); } if(prefix==='adj') { pageState.adj.page = 1; renderAdjustGrid(); } if(prefix==='rep') { pageState.rep.page = 1; renderReports(); } }, 10); 
     }
     
     function removeAccents(str) { return str ? String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : ''; }
@@ -1967,7 +2079,7 @@
         document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active')); document.querySelectorAll('.dropdown-item').forEach(link => link.classList.remove('active', 'text-bim'));
         if(element) { element.classList.add('active'); if(element.classList.contains('dropdown-item')) { element.classList.add('text-bim'); element.closest('.dropdown').querySelector('.nav-link').classList.add('active'); } }
         let navbarCollapse = document.getElementById('topNavMenu'); if (navbarCollapse.classList.contains('show')) new bootstrap.Collapse(navbarCollapse, {toggle: false}).hide();
-        setTimeout(() => { if(viewName === 'employees') filterEmployees(); if(viewName === 'dashboard') renderDashboard(); if(viewName === 'adjust') renderAdjustGrid(); if(viewName === 'reports') renderReports(); }, 10);
+        setTimeout(() => { if(viewName === 'employees') { pageState.emp.page = 1; filterEmployees(); } if(viewName === 'dashboard') { pageState.dash.page = 1; renderDashboard(); } if(viewName === 'adjust') { pageState.adj.page = 1; renderAdjustGrid(); } if(viewName === 'reports') { pageState.rep.page = 1; renderReports(); } }, 10);
     }
 
     function switchRegTab(tabId, element, mode = null) {
@@ -1976,7 +2088,7 @@
         document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active')); document.querySelectorAll('.dropdown-item').forEach(link => link.classList.remove('active', 'text-bim'));
         if (element) { element.classList.add('active'); if (element.classList.contains('dropdown-item')) { element.classList.add('text-bim'); let parentLink = element.closest('.dropdown').querySelector('.nav-link'); if(parentLink) parentLink.classList.add('active'); let dropendToggle = element.closest('.dropdown-submenu')?.querySelector('.dropdown-toggle'); if(dropendToggle) dropendToggle.classList.add('active', 'text-bim'); } }
         let navbarCollapse = document.getElementById('topNavMenu'); if (navbarCollapse.classList.contains('show')) new bootstrap.Collapse(navbarCollapse, {toggle: false}).hide();
-        setTimeout(() => { if(tabId === 'reg-personal') { if(mode === 'mode-vcal') { document.getElementById('mode-cycle').classList.remove('show', 'active'); document.getElementById('mode-vcal').classList.add('show', 'active'); renderVcal(); } else if (mode === 'mode-cycle') { document.getElementById('mode-vcal').classList.remove('show', 'active'); document.getElementById('mode-cycle').classList.add('show', 'active'); renderRegGrid(); } else { if(document.getElementById('mode-cycle').classList.contains('active')) renderRegGrid(); if(document.getElementById('mode-vcal').classList.contains('active')) renderVcal(); } } else if (tabId === 'reg-others') { renderRegOthersGrid(); } else if (tabId === 'reg-unregistered') { renderUnregistered(); } }, 10);
+        setTimeout(() => { if(tabId === 'reg-personal') { if(mode === 'mode-vcal') { document.getElementById('mode-cycle').classList.remove('show', 'active'); document.getElementById('mode-vcal').classList.add('show', 'active'); renderVcal(); } else if (mode === 'mode-cycle') { document.getElementById('mode-vcal').classList.remove('show', 'active'); document.getElementById('mode-cycle').classList.add('show', 'active'); pageState.mc.page = 1; renderRegGrid(); } else { if(document.getElementById('mode-cycle').classList.contains('active')) { pageState.mc.page = 1; renderRegGrid(); } if(document.getElementById('mode-vcal').classList.contains('active')) renderVcal(); } } else if (tabId === 'reg-others') { pageState.ro.page = 1; renderRegOthersGrid(); } else if (tabId === 'reg-unregistered') { renderUnregistered(); } }, 10);
     }
     
     function getShortMealName(val) { if(val === 'X') return 'BT'; if(val === 'Y') return 'HY'; return '_'; }
@@ -2078,34 +2190,51 @@
     }
     function triggerFilter(prefix) {
         setTimeout(() => {
-            if(prefix==='dash') renderDashboard();
-            if(prefix==='ro') renderRegOthersGrid();
+            if(prefix==='dash') { pageState.dash.page = 1; renderDashboard(); }
+            if(prefix==='ro') { pageState.ro.page = 1; renderRegOthersGrid(); }
             if(prefix==='unreg') renderUnregistered();
-            if(prefix==='emp') filterEmployees();
-            if(prefix==='adj') renderAdjustGrid();
-            if(prefix==='rep') renderReports();
+            if(prefix==='emp') { pageState.emp.page = 1; filterEmployees(); }
+            if(prefix==='adj') { pageState.adj.page = 1; renderAdjustGrid(); }
+            if(prefix==='rep') { pageState.rep.page = 1; renderReports(); }
         }, 10);
     }
     
     function buildTreeHTML(nodeObj, level, parentId) { let html = ''; let i = 0; for (let key in nodeObj) { let id = `${parentId}_${level}_${i++}`; let hasChild = Object.keys(nodeObj[key]).length > 0; html += `<li class="tree-node"><label><input type="checkbox" class="tree-cb" value="${key}" data-id="${id}" data-pid="${parentId}" onchange="treeCheck(this)" checked> <span class="${level===0?'fw-bold text-primary':''}">${key}</span></label>`; if(hasChild) html += `<ul class="tree-root" id="group_${id}">` + buildTreeHTML(nodeObj[key], level + 1, id) + `</ul>`; html += `</li>`; } return html; }
-    function treeCheck(cb) { let isChecked = cb.checked; let id = cb.getAttribute('data-id'); let group = document.getElementById(`group_${id}`); if(group) group.querySelectorAll('.tree-cb').forEach(childCb => childCb.checked = isChecked); setTimeout(() => { if(!document.getElementById('view-employees').classList.contains('d-none')) filterEmployees(); if(!document.getElementById('view-dashboard').classList.contains('d-none')) renderDashboard(); if(document.getElementById('reg-others').classList.contains('active')) renderRegOthersGrid(); if(document.getElementById('reg-unregistered').classList.contains('active')) renderUnregistered(); if(!document.getElementById('view-adjust').classList.contains('d-none')) renderAdjustGrid(); if(!document.getElementById('view-reports').classList.contains('d-none')) renderReports(); }, 10); }
-    function treeCheckAll(masterCb, containerId) { document.getElementById(containerId).querySelectorAll('.tree-cb').forEach(cb => cb.checked = masterCb.checked); setTimeout(() => { if(containerId.includes('emp')) filterEmployees(); else if (containerId.includes('dash')) renderDashboard(); else if (containerId.includes('unreg')) renderUnregistered(); else if (containerId.includes('adj')) renderAdjustGrid(); else if (containerId.includes('rep')) renderReports(); else renderRegOthersGrid(); }, 10); }
+    function treeCheck(cb) { let isChecked = cb.checked; let id = cb.getAttribute('data-id'); let group = document.getElementById(`group_${id}`); if(group) group.querySelectorAll('.tree-cb').forEach(childCb => childCb.checked = isChecked); setTimeout(() => { if(!document.getElementById('view-employees').classList.contains('d-none')) { pageState.emp.page = 1; filterEmployees(); } if(!document.getElementById('view-dashboard').classList.contains('d-none')) { pageState.dash.page = 1; renderDashboard(); } if(document.getElementById('reg-others').classList.contains('active')) { pageState.ro.page = 1; renderRegOthersGrid(); } if(document.getElementById('reg-unregistered').classList.contains('active')) renderUnregistered(); if(!document.getElementById('view-adjust').classList.contains('d-none')) { pageState.adj.page = 1; renderAdjustGrid(); } if(!document.getElementById('view-reports').classList.contains('d-none')) { pageState.rep.page = 1; renderReports(); } }, 10); }
+    function treeCheckAll(masterCb, containerId) { document.getElementById(containerId).querySelectorAll('.tree-cb').forEach(cb => cb.checked = masterCb.checked); setTimeout(() => { if(containerId.includes('emp')) { pageState.emp.page = 1; filterEmployees(); } else if (containerId.includes('dash')) { pageState.dash.page = 1; renderDashboard(); } else if (containerId.includes('unreg')) renderUnregistered(); else if (containerId.includes('adj')) { pageState.adj.page = 1; renderAdjustGrid(); } else if (containerId.includes('rep')) { pageState.rep.page = 1; renderReports(); } else { pageState.ro.page = 1; renderRegOthersGrid(); } }, 10); }
     function getCheckedTreeVals(containerId) { return Array.from(document.getElementById(containerId).querySelectorAll('.tree-cb:checked')).map(cb => cb.value); }
     function getCycleDates(offset) { let d = new Date(); d.setMonth(d.getMonth() + offset); let day = d.getDate(), month = d.getMonth(), year = d.getFullYear(); let sMonth = day >= 24 ? month : month - 1; return { start: new Date(year, sMonth, 24), end: new Date(year, sMonth + 1, 23) }; }
     
     function getLockStatus(loopTime, empLeaveDateStr) { 
-        if (currentUser && currentUser.role === 'Admin_full') return { bf: false, lu: false, di: false, ot: false, all: false };
-        let now = new Date(); let targetDate = new Date(loopTime); let res = { bf: false, lu: false, di: false, ot: false, all: false }; let isSun = targetDate.getDay() === 0;
+        let res = { bf: false, lu: false, di: false, ot: false, all: false, reason: '' };
+        if (currentUser && currentUser.role === 'Admin_full') return res;
+        
+        let now = new Date(); let targetDate = new Date(loopTime); let isSun = targetDate.getDay() === 0;
         let confMain = appSettings.mealLocks ? (isSun && appSettings.mealLocks.sunMain ? appSettings.mealLocks.sunMain : appSettings.mealLocks.main) : { d:1, h:16 }; if(!confMain) confMain = { d:1, h:16 };
         let lockTimeMain = new Date(targetDate); lockTimeMain.setDate(lockTimeMain.getDate() - confMain.d); lockTimeMain.setHours(confMain.h, 0, 0, 0);
-        if (now >= lockTimeMain) { res.bf = true; res.lu = true; res.di = true; }
+        
+        if (now >= lockTimeMain) { res.bf = true; res.lu = true; res.di = true; res.reason = 'Quá giờ khóa suất ăn chính'; }
+        
         let confOt = appSettings.mealLocks ? (isSun && appSettings.mealLocks.sunOt ? appSettings.mealLocks.sunOt : appSettings.mealLocks.ot) : { d:0, h:7 }; if(!confOt) confOt = { d:0, h:7 };
         let lockTimeOt = new Date(targetDate); lockTimeOt.setDate(lockTimeOt.getDate() + 1 - confOt.d); lockTimeOt.setHours(confOt.h, 0, 0, 0);
-        if (now >= lockTimeOt) res.ot = true;
-        if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) res.ot = true;
+        
+        if (now >= lockTimeOt) { res.ot = true; if(!res.reason) res.reason = 'Quá giờ khóa suất tăng ca'; else res.reason += ' & Quá giờ khóa OT'; }
+        if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) { res.ot = true; }
+        
         let dStr = targetDate.toLocaleDateString('en-CA'); let hol = holidaysData.find(h => h.date === dStr);
-        if (hol) { let holOffset = hol.offset || 0; let lk = new Date(targetDate); lk.setDate(lk.getDate() - holOffset); lk.setHours(0,0,0,0); if (now >= lk) res.bf = res.lu = res.di = res.ot = res.all = true; }
-        if (empLeaveDateStr) { let p = empLeaveDateStr.split('/'); if(p.length === 3) { let ldObj = new Date(p[2], p[1]-1, p[0]); let offset = appSettings.leaveOffset || 0; let lockAppTime = new Date(ldObj); lockAppTime.setDate(lockAppTime.getDate() - offset); lockAppTime.setHours(0,0,0,0); if (targetDate >= ldObj && now >= lockAppTime) res.bf = res.lu = res.di = res.ot = res.all = true; } }
+        if (hol) { 
+            let holOffset = hol.offset || 0; let lk = new Date(targetDate); lk.setDate(lk.getDate() - holOffset); lk.setHours(0,0,0,0); 
+            if (now >= lk) { res.bf = res.lu = res.di = res.ot = res.all = true; res.reason = `Bị khóa do ngày Lễ/Tết (${hol.name})`; } 
+        }
+        
+        if (empLeaveDateStr) { 
+            let p = empLeaveDateStr.split('/'); 
+            if(p.length === 3) { 
+                let ldObj = new Date(p[2], p[1]-1, p[0]); let offset = appSettings.leaveOffset || 0; 
+                let lockAppTime = new Date(ldObj); lockAppTime.setDate(lockAppTime.getDate() - offset); lockAppTime.setHours(0,0,0,0); 
+                if (targetDate >= ldObj && now >= lockAppTime) { res.bf = res.lu = res.di = res.ot = res.all = true; res.reason = 'Nhân viên đã nghỉ việc'; } 
+            } 
+        }
         return res; 
     }
 
@@ -2152,9 +2281,11 @@
         let dStrInput = document.getElementById('dash-date').value; if(!dStrInput) return;
         let dStart, dEnd; if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
         let sText = removeAccents(document.getElementById('dash-search').value); let sDepts = getCheckedTreeVals('dash-dept-tree'); let sStatuses = getCheckedStatuses('dash'); let sBpGoc = getCheckedBpGoc('dash');
-        let tbody = document.getElementById('dash-table-body'); let html = []; let c = 1; let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
+        let tbody = document.getElementById('dash-table-body'); let html = []; let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
 
         document.getElementById('dash-thead').innerHTML = buildTheadHTML('dash');
+        
+        let filteredArray = [];
         dashboardData.forEach(row => {
             let cleanDate = String(row.date).trim(); let rd; if(cleanDate.includes('/')) { let p = cleanDate.split('/'); rd = new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); } else rd = new Date(cleanDate);
             if (rd >= dStart && rd <= dEnd) {
@@ -2171,10 +2302,21 @@
                     if(row.lunch === 'X') { sumTruaBt++; hasMeal = true; } else if (row.lunch === 'Y') { sumTruaHy++; hasMeal = true; }
                     if(row.dinner === 'X') { sumToiBt++; hasMeal = true; } else if (row.dinner === 'Y') { sumToiHy++; hasMeal = true; }
                     if(row.ot === 'X') { sumOtBt++; hasMeal = true; } else if (row.ot === 'Y') { sumOtHy++; hasMeal = true; }
-                    if (hasMeal) { html.push(`<tr><td>${c++}</td><td class="fw-bold">${row.date}</td>${buildTbodyCols('dash', row, false)}<td>${getStyledMealName(row.breakfast)}</td><td>${getStyledMealName(row.lunch)}</td><td>${getStyledMealName(row.dinner)}</td><td class="ot-col">${getStyledMealName(row.ot)}</td><td class="text-start">${row.note || ''}</td></tr>`); }
+                    if (hasMeal) { filteredArray.push({row: row, empObj: empObj}); }
                 }
             }
         });
+        
+        renderPagination('dash', filteredArray.length, renderDashboard);
+        let limit = pageState.dash.limit === 'ALL' ? filteredArray.length : pageState.dash.limit;
+        let page = pageState.dash.page;
+        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
+        let startIdx = (page - 1) * limit + 1;
+
+        pagedData.forEach(item => {
+            html.push(`<tr><td>${startIdx++}</td><td class="fw-bold">${item.row.date}</td>${buildTbodyCols('dash', item.row, false)}<td>${getStyledMealName(item.row.breakfast)}</td><td>${getStyledMealName(item.row.lunch)}</td><td>${getStyledMealName(item.row.dinner)}</td><td class="ot-col">${getStyledMealName(item.row.ot)}</td><td class="text-start">${item.row.note || ''}</td></tr>`);
+        });
+
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['dash']||[]).length + 7}" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
         document.getElementById('dash-sang').innerText = sumSangBt + sumSangHy; document.getElementById('dash-sang-bt').innerText = sumSangBt; document.getElementById('dash-sang-hy').innerText = sumSangHy; document.getElementById('dash-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('dash-trua-bt').innerText = sumTruaBt; document.getElementById('dash-trua-hy').innerText = sumTruaHy; document.getElementById('dash-toi').innerText = sumToiBt + sumToiHy; document.getElementById('dash-toi-bt').innerText = sumToiBt; document.getElementById('dash-toi-hy').innerText = sumToiHy; document.getElementById('dash-ot').innerText = sumOtBt + sumOtHy; document.getElementById('dash-ot-bt').innerText = sumOtBt; document.getElementById('dash-ot-hy').innerText = sumOtHy;
     }
@@ -2549,7 +2691,7 @@
         let dStrInput = document.getElementById('rep-date').value; if(!dStrInput) return;
         let dStart, dEnd; if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
         let sText = removeAccents(document.getElementById('rep-search').value); let sDepts = getCheckedTreeVals('rep-dept-tree'); let sStatuses = getCheckedStatuses('rep'); let sBpGoc = getCheckedBpGoc('rep');
-        let tbody = document.getElementById('rep-table-body'); let html = []; let c = 1; let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
+        let tbody = document.getElementById('rep-table-body'); let html = []; let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
         let dataType = document.getElementById('rep-data-type').value;
 
         document.getElementById('rep-thead').innerHTML = buildTheadHTML('rep');
@@ -2573,6 +2715,7 @@
             });
         }
 
+        let filteredArray = [];
         Object.values(mergedData).forEach(row => {
             let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; let status = empObj.leaveStatus || 'Đang làm việc';
             if (!sStatuses.includes(status)) return;
@@ -2587,9 +2730,20 @@
                 if(row.lunch === 'X') { sumTruaBt++; hasMeal = true; } else if (row.lunch === 'Y') { sumTruaHy++; hasMeal = true; }
                 if(row.dinner === 'X') { sumToiBt++; hasMeal = true; } else if (row.dinner === 'Y') { sumToiHy++; hasMeal = true; }
                 if(row.ot === 'X') { sumOtBt++; hasMeal = true; } else if (row.ot === 'Y') { sumOtHy++; hasMeal = true; }
-                if (hasMeal) { html.push(`<tr><td>${c++}</td><td class="fw-bold">${row.date}</td>${buildTbodyCols('rep', empObj, false)}<td>${getStyledMealName(row.breakfast)}</td><td>${getStyledMealName(row.lunch)}</td><td>${getStyledMealName(row.dinner)}</td><td class="ot-col">${getStyledMealName(row.ot)}</td><td class="text-start">${row.note || ''}</td></tr>`); }
+                if (hasMeal) { filteredArray.push({row: row, empObj: empObj}); }
             }
         });
+
+        renderPagination('rep', filteredArray.length, renderReports);
+        let limit = pageState.rep.limit === 'ALL' ? filteredArray.length : pageState.rep.limit;
+        let page = pageState.rep.page;
+        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
+        let startIdx = (page - 1) * limit + 1;
+
+        pagedData.forEach(item => {
+            html.push(`<tr><td>${startIdx++}</td><td class="fw-bold">${item.row.date}</td>${buildTbodyCols('rep', item.empObj, false)}<td>${getStyledMealName(item.row.breakfast)}</td><td>${getStyledMealName(item.row.lunch)}</td><td>${getStyledMealName(item.row.dinner)}</td><td class="ot-col">${getStyledMealName(item.row.ot)}</td><td class="text-start">${item.row.note || ''}</td></tr>`);
+        });
+
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['rep']||[]).length + 7}" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
         document.getElementById('rep-sang').innerText = sumSangBt + sumSangHy; document.getElementById('rep-sang-bt').innerText = sumSangBt; document.getElementById('rep-sang-hy').innerText = sumSangHy; document.getElementById('rep-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('rep-trua-bt').innerText = sumTruaBt; document.getElementById('rep-trua-hy').innerText = sumTruaHy; document.getElementById('rep-toi').innerText = sumToiBt + sumToiHy; document.getElementById('rep-toi-bt').innerText = sumToiBt; document.getElementById('rep-toi-hy').innerText = sumToiHy; document.getElementById('rep-ot').innerText = sumOtBt + sumOtHy; document.getElementById('rep-ot-bt').innerText = sumOtBt; document.getElementById('rep-ot-hy').innerText = sumOtHy;
     }
@@ -2718,12 +2872,12 @@
         }
     }
 
-    function handleExcelUpload(event, mode = 'ro') {
+function handleExcelUpload(event, mode = 'ro') {
         let file = event.target.files[0]; if(!file) return; let reader = new FileReader();
         reader.onload = function(e) {
             try {
                 let data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'});
-                let validMeals = [], errors = [];
+                let rawRequests = [], errors = [];
                 
                 const ignoreSheets = ["Hiệu chỉnh", "Thực tế", "Ăn Sang", "Ăn Trưa", "Ăn Tối", "Tăng Ca", "Tổng hợp"];
                 
@@ -2750,39 +2904,34 @@
                         let mnv = String(row[1]).trim(), emp = employeeData.find(e => String(e.mnv) === mnv); 
                         if(!emp) { errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Không tìm thấy Mã NV.`); continue; }
                         
-                        let bf = mapExcelMealValue(row[6]), 
-                            lu = mapExcelMealValue(row[7]), 
-                            di = mapExcelMealValue(row[8]), 
-                            ot = mapExcelMealValue(row[9]), 
-                            note = row[10] ? String(row[10]).trim() : '';
+                        let bf = mapExcelMealValue(row[6]), lu = mapExcelMealValue(row[7]), di = mapExcelMealValue(row[8]), ot = mapExcelMealValue(row[9]), note = row[10] ? String(row[10]).trim() : '';
                         
                         if(bf === 'INVALID' || lu === 'INVALID' || di === 'INVALID' || ot === 'INVALID') { 
                             errors.push(`Sheet ${sheetName} - Dòng ${i+1} (${mnv}): Giá trị suất ăn không hợp lệ.`); 
                             continue; 
                         }
-                        
-                        validMeals.push({ mnv: mnv, name: emp.name, date: dStrB3, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note });
+
+                        // Chỉ gom dữ liệu dạng "Yêu cầu", việc lọc Khóa theo buổi sẽ do processAndPreviewChanges lo
+                        rawRequests.push({
+                            mnv: mnv, name: emp.name, date: dStrB3,
+                            reqBf: bf, reqLu: lu, reqDi: di, reqOt: ot, reqNote: note
+                        });
                     }
                 });
 
                 event.target.value = ""; 
                 if(errors.length > 0) { 
-                    if(confirm("Phát hiện " + errors.length + " dòng lỗi:\n\n" + errors.join("\n") + "\n\nBạn có muốn tiếp tục UPLOAD các dòng HỢP LỆ không?")) { 
-                        if(validMeals.length > 0) {
-                            if(mode === 'adj') sendAdjustData(validMeals);
-                            else sendMealData(validMeals);
-                        } else showToast("Không có dòng nào hợp lệ.", "danger"); 
-                    } 
+                    alert("Phát hiện " + errors.length + " lỗi định dạng cơ bản (Sai Mã NV/Ký tự):\n\n" + errors.slice(0, 15).join("\n") + "\n\nSẽ tiếp tục xử lý các dòng hợp lệ...");
+                }
+                
+                if(rawRequests.length > 0) {
+                    processAndPreviewChanges(rawRequests, mode);
                 } else { 
-                    if(validMeals.length > 0) {
-                        if(mode === 'adj') sendAdjustData(validMeals);
-                        else sendMealData(validMeals);
-                    } else showToast("File rỗng hoặc không có sheet ngày (dd.mm.yy) hợp lệ.", "danger"); 
+                    showToast("File rỗng hoặc không có sheet ngày (dd.mm.yy) hợp lệ.", "danger"); 
                 }
             } catch(err) { showToast("Đã xảy ra lỗi đọc file Excel!", "danger"); }
         }; reader.readAsArrayBuffer(file);
     }
-    
     function mapExcelMealValue(val) { if(val === undefined || val === null || val === '') return '0'; let v = String(val).trim().toUpperCase(); if(v === '0' || v === 'O' || v === '-') return '0'; if(v === 'X' || v === 'Y') return v; return 'INVALID'; }
 
     async function exportReportsExcel() {
@@ -3124,7 +3273,7 @@
         }
     }
 
-    // REG GRID
+    // REG GRID (KỲ)
     function renderRegGrid() {
         let dStrInput = document.getElementById('mc-date').value; if(!dStrInput) return;
         let dStart, dEnd;
@@ -3138,11 +3287,14 @@
         let buildSel = (cls, val, disabled, dDisplay) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? 'disabled' : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}')">${getOpts(val)}</select>`;
 
         let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
+        let allRowsData = [];
 
         while(loop <= dEnd) {
             let lTime = loop.getTime(), dStr = loop.toLocaleDateString('en-CA'), dDisplay = toDDMMYYYY(loop);
             let locks = getLockStatus(lTime, currentUser.leaveDate); 
-            let isSun = loop.getDay() === 0; let hol = holidaysData.find(h => h.date === dStr); let isAllLocked = locks.all; let rowClass = isAllLocked ? 'row-locked' : (hol ? 'row-holiday' : (isSun ? 'row-sunday' : ''));
+            let isSun = loop.getDay() === 0; let hol = holidaysData.find(h => h.date === dStr); 
+            let isAllLocked = locks.all; 
+            let rowClass = isAllLocked ? 'row-locked' : (hol ? 'row-holiday' : (isSun ? 'row-sunday' : ''));
             
             let myMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
             let cache = tempMealCache[`${mnv}_${dDisplay}`];
@@ -3157,15 +3309,45 @@
             if(diVal === 'X') sumToiBt++;  else if (diVal === 'Y') sumToiHy++;
             if(otVal === 'X') sumOtBt++;   else if (otVal === 'Y') sumOtHy++;
 
-            let selBf = buildSel('ms-bf', bfVal, locks.bf, dDisplay);
-            let selLu = buildSel('ms-lu', luVal, locks.lu, dDisplay);
-            let selDi = buildSel('ms-di', diVal, locks.di, dDisplay);
-            let selOt = buildSel('ms-ot ot-select', otVal, locks.ot, dDisplay);
-			let escapedNote = String(noteVal).replace(/"/g, '&quot;');
-            let inpNote = isAllLocked ? `<input type="text" class="form-control form-control-sm border-0 meal-note" disabled value="${escapedNote}">` : `<input type="text" class="form-control form-control-sm border-secondary meal-note" value="${escapedNote}" onblur="cacheRow(this, '${mnv}', '${dDisplay}')">`;
-            html.push(`<tr class="${rowClass}" data-date="${dDisplay}" data-mnv="${mnv}"><td class="fw-bold align-middle ${isAllLocked?'text-muted':''}">${dDisplay}<br>${hol?`<small class="text-success fw-bold">${hol.name}</small>`:''}</td><td class="align-middle fw-bold ${isSun?'text-danger':(hol?'text-success':'')}">${wDays[loop.getDay()]}</td><td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOt}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}')" title="Xóa chọn dòng này"><i class="fa-solid fa-trash"></i></button></td></tr>`); loop.setDate(loop.getDate() + 1);
+            allRowsData.push({
+                dDisplay: dDisplay, wDay: wDays[loop.getDay()], hol: hol,
+                locks: locks, rowClass: rowClass, isAllLocked: isAllLocked, isSun: isSun,
+                bfVal: bfVal, luVal: luVal, diVal: diVal, otVal: otVal, noteVal: noteVal
+            });
+            loop.setDate(loop.getDate() + 1);
         }
-        tbody.innerHTML = html.join(''); enforceOtSelectPermission();
+
+        renderPagination('mc', allRowsData.length, renderRegGrid);
+        let limit = pageState.mc.limit === 'ALL' ? allRowsData.length : pageState.mc.limit;
+        let page = pageState.mc.page;
+        let pagedData = allRowsData.slice((page - 1) * limit, page * limit);
+
+        pagedData.forEach(r => {
+            let selBf = buildSel('ms-bf', r.bfVal, r.locks.bf, r.dDisplay);
+            let selLu = buildSel('ms-lu', r.luVal, r.locks.lu, r.dDisplay);
+            let selDi = buildSel('ms-di', r.diVal, r.locks.di, r.dDisplay);
+            let selOt = buildSel('ms-ot ot-select', r.otVal, r.locks.ot, r.dDisplay);
+            let escapedNote = String(r.noteVal).replace(/"/g, '&quot;');
+            
+            let inpNote = r.isAllLocked 
+                ? `<input type="text" class="form-control form-control-sm border-0 meal-note text-center" disabled value="${escapedNote}" title="${r.locks.reason}">` 
+                : `<input type="text" class="form-control form-control-sm border-secondary meal-note text-center" value="${escapedNote}" onblur="cacheRow(this, '${mnv}', '${r.dDisplay}')">`;
+            
+            let trHtml = `<tr class="${r.rowClass}" data-date="${r.dDisplay}" data-mnv="${mnv}">
+                <td class="fw-bold align-middle ${r.isAllLocked?'text-muted':''}" ${r.isAllLocked ? `title="${r.locks.reason}"` : ''}>${r.dDisplay}<br>${r.hol?`<small class="text-success fw-bold">${r.hol.name}</small>`:''}</td>
+                <td class="align-middle fw-bold ${r.isSun?'text-danger':(r.hol?'text-success':'')}">${r.wDay}</td>
+                <td class="align-middle" ${r.locks.bf ? `title="${r.locks.reason}"` : ''}>${selBf}</td>
+                <td class="align-middle" ${r.locks.lu ? `title="${r.locks.reason}"` : ''}>${selLu}</td>
+                <td class="align-middle" ${r.locks.di ? `title="${r.locks.reason}"` : ''}>${selDi}</td>
+                <td class="align-middle ot-col" ${r.locks.ot ? `title="${r.locks.reason}"` : ''}>${selOt}</td>
+                <td class="align-middle">${inpNote}</td>
+                <td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${r.dDisplay}')" title="Xóa chọn dòng này" ${r.isAllLocked ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`;
+            html.push(trHtml);
+        });
+
+        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="8" class="text-center text-muted">Không có dữ liệu ngày</td></tr>`;
+        enforceOtSelectPermission();
 
         document.getElementById('mc-sang').innerText = sumSangBt + sumSangHy; document.getElementById('mc-sang-bt').innerText = sumSangBt; document.getElementById('mc-sang-hy').innerText = sumSangHy; 
         document.getElementById('mc-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('mc-trua-bt').innerText = sumTruaBt; document.getElementById('mc-trua-hy').innerText = sumTruaHy; 
@@ -3173,16 +3355,27 @@
         document.getElementById('mc-ot').innerText = sumOtBt + sumOtHy; document.getElementById('mc-ot-bt').innerText = sumOtBt; document.getElementById('mc-ot-hy').innerText = sumOtHy;
     }
 
-    function renderVcal() {
+function renderVcal() {
         let dates = getCycleDates(currentCycleOffset); document.getElementById('vcal-cycle-title').innerText = `Kỳ: ${toDDMMYYYY(dates.start)} - ${toDDMMYYYY(dates.end)}`;
         let container = document.getElementById('vcal-grid'); let html = []; let startDay = dates.start.getDay(); let padding = startDay === 0 ? 6 : startDay - 1; for(let i = 0; i < padding; i++) html.push(`<div class="vcal-box empty"></div>`);
         let loop = new Date(dates.start);
+        let todayDisplay = toDDMMYYYY(new Date());
+
         while(loop <= dates.end) {
             let lTime = loop.getTime(), dStr = loop.toLocaleDateString('en-CA'), dDisplay = toDDMMYYYY(loop);
-            let locks = getLockStatus(lTime, currentUser.leaveDate); let isAllLocked = locks.all; let isSun = loop.getDay() === 0; let hol = holidaysData.find(h => h.date === dStr);
-            let classes = ['vcal-box']; if(isAllLocked) classes.push('locked'); else { if(hol) classes.push('hol'); else if(isSun) classes.push('sun'); } if(selectedVcalDates.has(dDisplay) && !isAllLocked) classes.push('selected'); 
+            let locks = getLockStatus(lTime, currentUser.leaveDate); 
+            let isAllLocked = locks.all || (locks.bf && locks.lu && locks.di && locks.ot); 
+            let isSun = loop.getDay() === 0; let hol = holidaysData.find(h => h.date === dStr);
+            let classes = ['vcal-box']; 
+            
+            if (dDisplay === todayDisplay) classes.push('today');
 
-            let dShort = `${String(loop.getDate()).padStart(2,'0')}/${String(loop.getMonth()+1).padStart(2,'0')}`;
+            if(isAllLocked) classes.push('locked'); else { if(hol) classes.push('hol'); else if(isSun) classes.push('sun'); } 
+            if(selectedVcalDates.has(dDisplay) && !isAllLocked) classes.push('selected'); 
+
+            let dShortRaw = `${String(loop.getDate()).padStart(2,'0')}/${String(loop.getMonth()+1).padStart(2,'0')}`;
+            let dShort = `<span class="date-text">${dShortRaw}</span>`;
+
             let myMeal = dashboardData.find(m => String(m.mnv) === String(currentUser.mnv) && m.date === dDisplay);
             let mealText = "";
             if (myMeal && (myMeal.breakfast !== '0' || myMeal.lunch !== '0' || myMeal.dinner !== '0' || myMeal.ot !== '0')) {
@@ -3194,17 +3387,32 @@
                 mealText = `<div class="meal-info">` + mArr.join('') + `</div>`;
             }
 
-            html.push(`<div class="${classes.join(' ')}" data-date="${dDisplay}" data-lockm="${locks.all}" data-locko="${locks.ot}" onpointerdown="lpStart(event, this, '${dStr}', '${locks.bf}', '${locks.lu}', '${locks.di}', '${locks.ot}')" onpointermove="lpMove()" onpointerup="lpEnd()" onpointercancel="lpEnd()" onpointerleave="lpEnd()" onclick="lpClick(this)"><div class="fw-bold fs-6">${dShort}</div>${hol ? `<div class="small lh-1 text-success fw-bold mt-1" style="font-size: 0.9em;">${hol.name}</div>` : ''}${mealText}</div>`); loop.setDate(loop.getDate() + 1);
+            html.push(`<div class="${classes.join(' ')}" data-date="${dDisplay}" data-lockbf="${locks.bf}" data-locklu="${locks.lu}" data-lockdi="${locks.di}" data-lockot="${locks.ot}" title="${locks.reason || ''}" onpointerdown="lpStart(event, this, '${dStr}', '${locks.bf}', '${locks.lu}', '${locks.di}', '${locks.ot}')" onpointermove="lpMove()" onpointerup="lpEnd()" onpointercancel="lpEnd()" onpointerleave="lpEnd()" onclick="lpClick(this)"><div class="fw-bold fs-6">${dShort}</div>${hol ? `<div class="small lh-1 text-success fw-bold mt-1" style="font-size: 0.9em;">${hol.name}</div>` : ''}${mealText}</div>`); loop.setDate(loop.getDate() + 1);
         }
-        container.innerHTML = html.join(''); enforceOtSelectPermission();
+        container.innerHTML = html.join(''); 
+        enforceOtSelectPermission();
+        updateRightPanelLocks(); 
     }
 
     let longPressTimer, isDragging = false;
     function lpStart(e, box, dStr, lBf, lLu, lDi, lOt) { isDragging = false; if(lBf==='true' && lLu==='true' && lDi==='true' && lOt==='true') return; longPressTimer = setTimeout(() => { isDragging = true; box.classList.remove('selected'); let dDisplay = box.getAttribute('data-date'); selectedVcalDates.delete(dDisplay); openSingleDateModal(dStr, lBf, lLu, lDi, lOt); }, 200); }
     function lpMove() { isDragging = true; clearTimeout(longPressTimer); }
     function lpEnd() { clearTimeout(longPressTimer); }
-    function lpClick(box) { clearTimeout(longPressTimer); if(isDragging) return; if(!box.classList.contains('locked')) { let dDisplayStr = box.getAttribute('data-date'); if(box.classList.contains('selected')) { box.classList.remove('selected'); selectedVcalDates.delete(dDisplayStr); } else { box.classList.add('selected'); selectedVcalDates.add(dDisplayStr); } } }
-
+function lpClick(box) { 
+        clearTimeout(longPressTimer); 
+        if(isDragging) return; 
+        if(!box.classList.contains('locked')) { 
+            let dDisplayStr = box.getAttribute('data-date'); 
+            if(box.classList.contains('selected')) { 
+                box.classList.remove('selected'); 
+                selectedVcalDates.delete(dDisplayStr); 
+            } else { 
+                box.classList.add('selected'); 
+                selectedVcalDates.add(dDisplayStr); 
+            } 
+            updateRightPanelLocks(); 
+        } 
+    }
     let sdModal;
     function openSingleDateModal(dStr, lBf, lLu, lDi, lOt) {
         if(!sdModal) sdModal = new bootstrap.Modal(document.getElementById('singleDateModal'));
@@ -3214,13 +3422,49 @@
         document.getElementById('sd-bf').disabled = (lBf === 'true'); document.getElementById('sd-lu').disabled = (lLu === 'true'); document.getElementById('sd-di').disabled = (lDi === 'true'); document.getElementById('sd-ot').disabled = (lOt === 'true'); enforceOtSelectPermission(); sdModal.show();
     }
     
-    function clearSingleDate() {
-        if(document.getElementById('sd-bf').disabled && document.getElementById('sd-lu').disabled && document.getElementById('sd-di').disabled && document.getElementById('sd-ot').disabled) return showToast("Không thể xóa do suất ăn đã bị khóa!", "danger");
-        if(!document.getElementById('sd-bf').disabled) document.getElementById('sd-bf').value = '0'; if(!document.getElementById('sd-lu').disabled) document.getElementById('sd-lu').value = '0'; if(!document.getElementById('sd-di').disabled) document.getElementById('sd-di').value = '0'; if(!document.getElementById('sd-ot').disabled) document.getElementById('sd-ot').value = '0'; document.getElementById('sd-note').value = ''; submitSingleDate();
+function clearSingleDate() {
+        let isBfDisabled = document.getElementById('sd-bf').disabled;
+        let isLuDisabled = document.getElementById('sd-lu').disabled;
+        let isDiDisabled = document.getElementById('sd-di').disabled;
+        let isOtDisabled = document.getElementById('sd-ot').disabled;
+
+        if(isBfDisabled && isLuDisabled && isDiDisabled && isOtDisabled) return showToast("Không thể xóa do suất ăn đã bị khóa toàn bộ!", "danger");
+
+        let dDisplay = document.getElementById('sd-date').value;
+        let myMeal = dashboardData.find(m => String(m.mnv) === String(currentUser.mnv) && m.date === dDisplay);
+        let existingBf = myMeal ? (myMeal.breakfast || '0') : '0';
+        let existingLu = myMeal ? (myMeal.lunch || '0') : '0';
+        let existingDi = myMeal ? (myMeal.dinner || '0') : '0';
+        let existingOt = myMeal ? (myMeal.ot || '0') : '0';
+
+        // Chỉ đưa về 0 những suất ăn chưa bị khóa
+        let bf = isBfDisabled ? existingBf : '0';
+        let lu = isLuDisabled ? existingLu : '0';
+        let di = isDiDisabled ? existingDi : '0';
+        let ot = isOtDisabled ? existingOt : '0';
+        let note = '';
+
+        sdModal.hide(); updateLocalDashboardData(currentUser.mnv, dDisplay, bf, lu, di, ot, note);
+        if(document.getElementById('mode-vcal').classList.contains('active')) renderVcal();
+        enqueueTask({ action: 'register', user: currentUser, data: [{ date: dDisplay, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note }] }, "Đang lưu...", async (res) => { if(res.success) { showToast('Đã xóa thành công cho ' + dDisplay, 'success'); await reloadDashboardData(); } });
     }
 
-    function submitSingleDate() {
-        let dDisplay = document.getElementById('sd-date').value; let bf = document.getElementById('sd-bf').disabled ? '' : document.getElementById('sd-bf').value; let lu = document.getElementById('sd-lu').disabled ? '' : document.getElementById('sd-lu').value; let di = document.getElementById('sd-di').disabled ? '' : document.getElementById('sd-di').value; let ot = document.getElementById('sd-ot').disabled ? '' : document.getElementById('sd-ot').value; let note = document.getElementById('sd-note').value;
+function submitSingleDate() {
+        let dDisplay = document.getElementById('sd-date').value; 
+        
+        let myMeal = dashboardData.find(m => String(m.mnv) === String(currentUser.mnv) && m.date === dDisplay);
+        let existingBf = myMeal ? (myMeal.breakfast || '0') : '0';
+        let existingLu = myMeal ? (myMeal.lunch || '0') : '0';
+        let existingDi = myMeal ? (myMeal.dinner || '0') : '0';
+        let existingOt = myMeal ? (myMeal.ot || '0') : '0';
+
+        // Lấy dữ liệu từ form Modal, nếu thẻ bị Disabled (Khóa) thì dùng lại dữ liệu cũ
+        let bf = document.getElementById('sd-bf').disabled ? existingBf : document.getElementById('sd-bf').value; 
+        let lu = document.getElementById('sd-lu').disabled ? existingLu : document.getElementById('sd-lu').value; 
+        let di = document.getElementById('sd-di').disabled ? existingDi : document.getElementById('sd-di').value; 
+        let ot = document.getElementById('sd-ot').disabled ? existingOt : document.getElementById('sd-ot').value; 
+        let note = document.getElementById('sd-note').value;
+        
         sdModal.hide(); updateLocalDashboardData(currentUser.mnv, dDisplay, bf, lu, di, ot, note);
         if(document.getElementById('mode-vcal').classList.contains('active')) renderVcal();
         enqueueTask({ action: 'register', user: currentUser, data: [{ date: dDisplay, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note }] }, "Đang lưu...", async (res) => { if(res.success) { showToast('Đã lưu thành công cho ' + dDisplay, 'success'); await reloadDashboardData(); } });
@@ -3257,18 +3501,39 @@
     
     function clearVcalRegistration() { if(selectedVcalDates.size === 0) return showToast("Bạn chưa chọn ngày trên lịch!", 'danger'); document.getElementById('vc-bf').value = '0'; document.getElementById('vc-lu').value = '0'; document.getElementById('vc-di').value = '0'; document.getElementById('vc-ot').value = '0'; document.getElementById('vc-note').value = ''; submitVcalRegistration(true); }
 
-    function submitVcalRegistration(isClear = false) {
+function submitVcalRegistration(isClear = false) {
         if(selectedVcalDates.size === 0) return showToast("Bạn chưa chọn ngày trên lịch!", 'danger');
-        let bf = document.getElementById('vc-bf').value, lu = document.getElementById('vc-lu').value, di = document.getElementById('vc-di').value, ot = document.getElementById('vc-ot').value, note = document.getElementById('vc-note').value; let mealArray = [];
+        let bf = document.getElementById('vc-bf').value, lu = document.getElementById('vc-lu').value, di = document.getElementById('vc-di').value, ot = document.getElementById('vc-ot').value, note = document.getElementById('vc-note').value; 
+        let mealArray = [];
+        let errorCount = 0;
+
         selectedVcalDates.forEach(dateStr => {
             let box = document.querySelector(`.vcal-box[data-date="${dateStr}"]`);
             if(box) {
-                let lockedM = box.getAttribute('data-lockm') === 'true'; let lockedO = box.getAttribute('data-locko') === 'true';
-                let p_bf = lockedM ? '' : (isClear ? '0' : bf); let p_lu = lockedM ? '' : (isClear ? '0' : lu); let p_di = lockedM ? '' : (isClear ? '0' : di); let p_ot = lockedO ? '' : (isClear ? '0' : ot);
-                if(p_bf !== '' || p_lu !== '' || p_di !== '' || p_ot !== '') { mealArray.push({ date: dateStr, breakfast: p_bf, lunch: p_lu, dinner: p_di, ot: p_ot, note: (lockedM ? undefined : (isClear ? '' : note)) }); }
+                let lockedBf = box.getAttribute('data-lockbf') === 'true';
+                let lockedLu = box.getAttribute('data-locklu') === 'true';
+                let lockedDi = box.getAttribute('data-lockdi') === 'true';
+                let lockedOt = box.getAttribute('data-lockot') === 'true';
+
+                let isAllLocked = lockedBf && lockedLu && lockedDi && lockedOt;
+                if(isAllLocked) { errorCount++; return; }
+
+                let myMeal = dashboardData.find(m => String(m.mnv) === String(currentUser.mnv) && m.date === dateStr);
+                let p_bf = lockedBf ? (myMeal ? myMeal.breakfast || '0' : '0') : (isClear ? '0' : bf);
+                let p_lu = lockedLu ? (myMeal ? myMeal.lunch || '0' : '0') : (isClear ? '0' : lu);
+                let p_di = lockedDi ? (myMeal ? myMeal.dinner || '0' : '0') : (isClear ? '0' : di);
+                let p_ot = lockedOt ? (myMeal ? myMeal.ot || '0' : '0') : (isClear ? '0' : ot);
+                let p_note = isClear ? '' : note;
+
+                if(p_bf !== '' || p_lu !== '' || p_di !== '' || p_ot !== '') { 
+                    mealArray.push({ date: dateStr, breakfast: p_bf, lunch: p_lu, dinner: p_di, ot: p_ot, note: p_note }); 
+                }
             }
         }); 
-        if (mealArray.length > 0) sendMealData(mealArray); else { selectedVcalDates.clear(); renderVcal(); }
+        
+        if (errorCount > 0) showToast(`Đã bỏ qua ${errorCount} ngày do đã khóa toàn bộ!`, 'warning');
+        if (mealArray.length > 0) sendMealData(mealArray); 
+        else { selectedVcalDates.clear(); renderVcal(); }
     }
     
     let copyModalObj;
@@ -3277,45 +3542,61 @@
         document.getElementById('copy-target-date').value = '';
         copyModalObj.show();
     }
-    function submitCopyDate() {
+function submitCopyDate() {
         let targetDateStr = document.getElementById('copy-target-date').value;
         if(!targetDateStr) return showToast('Vui lòng chọn ngày đích!', 'danger');
         if(targetDateStr.includes(' to ')) return showToast('Chỉ chọn 1 ngày đích!', 'danger');
         
-        let rows = document.querySelectorAll('#ro-grid-body tr'); let mealArray = [];
+        let rows = document.querySelectorAll('#ro-grid-body tr'); 
+        let rawRequests = [];
+        
         rows.forEach(tr => {
             let mnv = tr.getAttribute('data-mnv');
+            if(!mnv) return;
             let bfEl = tr.querySelector('.ms-bf'), luEl = tr.querySelector('.ms-lu'), diEl = tr.querySelector('.ms-di'), otEl = tr.querySelector('.ms-ot');
             let bf = bfEl ? bfEl.value : '0', lu = luEl ? luEl.value : '0', di = diEl ? diEl.value : '0', ot = otEl ? otEl.value : '0', note = tr.querySelector('.meal-note') ? tr.querySelector('.meal-note').value : '';
+            
             if(bf !== '0' || lu !== '0' || di !== '0' || ot !== '0') {
-                let item = { mnv: mnv, name: tr.getAttribute('data-name'), date: targetDateStr, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note };
-                mealArray.push(item);
-                tempMealCache[`${mnv}_${targetDateStr}`] = item;
+                rawRequests.push({
+                    mnv: mnv, name: tr.getAttribute('data-name'), date: targetDateStr,
+                    reqBf: bf, reqLu: lu, reqDi: di, reqOt: ot, reqNote: note
+                });
             }
         });
-        if(mealArray.length === 0) { showToast('Không có dữ liệu suất ăn nào để copy!', 'danger'); return; }
         
-        copyModalObj.hide();
-        sendMealData(mealArray);
+        if(rawRequests.length === 0) { 
+            showToast('Không có dữ liệu suất ăn nào để copy!', 'danger'); 
+            return; 
+        }
+        
+        if(copyModalObj) copyModalObj.hide();
+        // Gọi hàm xử lý Preview thay vì lưu ngay
+        processAndPreviewChanges(rawRequests, 'ro');
     }
-
-    // REG OTHERS
+// REG OTHERS (ĐĂNG KÝ HỘ)
     function renderRegOthersGrid() {
         let dStrInput = document.getElementById('ro-date').value; if(!dStrInput) return;
         let dStr = dStrInput.split(' to ')[0], parts = dStr.split('/'), d = new Date(parts[2], parseInt(parts[1])-1, parts[0]);
         let tbody = document.getElementById('ro-grid-body'), html = [], sText = removeAccents(document.getElementById('ro-search').value), dDisplay = toDDMMYYYY(d), sDepts = getCheckedTreeVals('ro-dept-tree'), sStatuses = getCheckedStatuses('ro'), sBpGoc = getCheckedBpGoc('ro'); 
-        let c = 1; document.getElementById('ro-thead').innerHTML = buildTheadHTML('ro');
+        document.getElementById('ro-thead').innerHTML = buildTheadHTML('ro');
         
         let getOpts = (val) => `<option value="0" ${val==='0'||!val?'selected':''}>O</option><option value="X" ${val==='X'?'selected':''}>X</option><option value="Y" ${val==='Y'?'selected':''}>Y</option>`;
-        let buildSel = (cls, val, disabled, mnv, dDisplay) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? 'disabled' : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', false)">${getOpts(val)}</select>`;
+        let buildSel = (cls, val, disabled, mnv, dDisplay, title) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? `disabled title="${title}"` : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', false)">${getOpts(val)}</select>`;
 
-        employeeData.forEach(e => {
+        let filteredArray = employeeData.filter(e => {
             let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText); 
             let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
-            
-            if(!matchText || !matchDept || !matchBpGoc || !sStatuses.includes(e.leaveStatus)) return;
+            return matchText && matchDept && matchBpGoc && sStatuses.includes(e.leaveStatus);
+        });
 
+        renderPagination('ro', filteredArray.length, renderRegOthersGrid);
+        let limit = pageState.ro.limit === 'ALL' ? filteredArray.length : pageState.ro.limit;
+        let page = pageState.ro.page;
+        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
+        let c = (page - 1) * limit + 1;
+
+        pagedData.forEach(e => {
             let locks = getLockStatus(d.getTime(), e.leaveDate); 
             let mnv = e.mnv;
             let myMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
@@ -3327,21 +3608,20 @@
             let noteVal = cache ? cache.note : (myMeal ? myMeal.note || '' : '');
             
             let isResigned = e.leaveStatus === 'Đã nghỉ';
-            if (isResigned && currentUser.role !== 'Admin_full') { locks.bf = true; locks.lu = true; locks.di = true; locks.ot = true; locks.all = true; }
-            let trClass = isResigned ? 'row-resigned' : '';
+            if (isResigned && currentUser.role !== 'Admin_full') { locks.bf = true; locks.lu = true; locks.di = true; locks.ot = true; locks.all = true; locks.reason = 'Nhân viên đã nghỉ việc'; }
+            let trClass = isResigned ? 'row-resigned' : (locks.all ? 'row-locked' : '');
             
-            let selBf = buildSel('ms-bf', bfVal, locks.bf, mnv, dDisplay);
-            let selLu = buildSel('ms-lu', luVal, locks.lu, mnv, dDisplay);
-            let selDi = buildSel('ms-di', diVal, locks.di, mnv, dDisplay);
-            let selOT = buildSel('ms-ot ot-select', otVal, locks.ot, mnv, dDisplay);
-// Xử lý ký tự đặc biệt để hiển thị đúng định dạng có xuống dòng
+            let selBf = buildSel('ms-bf', bfVal, locks.bf, mnv, dDisplay, locks.reason);
+            let selLu = buildSel('ms-lu', luVal, locks.lu, mnv, dDisplay, locks.reason);
+            let selDi = buildSel('ms-di', diVal, locks.di, mnv, dDisplay, locks.reason);
+            let selOT = buildSel('ms-ot ot-select', otVal, locks.ot, mnv, dDisplay, locks.reason);
             let escapedNote = String(noteVal).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
-            // Dùng textarea có onfocus mở rộng ra 3 dòng, onblur thu lại 1 dòng để chống lag
             let inpNote = locks.all 
-                ? `<textarea class="form-control form-control-sm border-0 meal-note" rows="1" disabled style="resize: none; overflow: hidden;">${escapedNote}</textarea>` 
+                ? `<textarea class="form-control form-control-sm border-0 meal-note" rows="1" disabled style="resize: none; overflow: hidden;" title="${locks.reason}">${escapedNote}</textarea>` 
                 : `<textarea class="form-control form-control-sm meal-note border-secondary" rows="1" style="resize: vertical; transition: all 0.2s;" onfocus="this.rows=3" onblur="this.rows=1; cacheRow(this, '${mnv}', '${dDisplay}', false)">${escapedNote}</textarea>`;
-            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td>${c++}</td>${buildTbodyCols('ro', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', false)" title="Xóa chọn dòng này"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            
+            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('ro', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', false)" title="Xóa chọn dòng này" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
         });
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['ro']||[]).length + 6}" class="text-center text-muted">Không tìm thấy NV</td></tr>`; enforceOtSelectPermission();
     }
@@ -3376,18 +3656,25 @@
         let dStrInput = document.getElementById('adj-date').value; if(!dStrInput) return;
         let dStr = dStrInput.split(' to ')[0], parts = dStr.split('/'), d = new Date(parts[2], parseInt(parts[1])-1, parts[0]);
         let tbody = document.getElementById('adj-grid-body'), html = [], sText = removeAccents(document.getElementById('adj-search').value), dDisplay = toDDMMYYYY(d), sDepts = getCheckedTreeVals('adj-dept-tree'), sStatuses = getCheckedStatuses('adj'), sBpGoc = getCheckedBpGoc('adj'); 
-        let c = 1; document.getElementById('adj-thead').innerHTML = buildTheadHTML('adj');
+        document.getElementById('adj-thead').innerHTML = buildTheadHTML('adj');
         
         let getOpts = (val) => `<option value="0" ${val==='0'||!val?'selected':''}>O</option><option value="X" ${val==='X'?'selected':''}>X</option><option value="Y" ${val==='Y'?'selected':''}>Y</option>`;
-        let buildSel = (cls, val, disabled, mnv, dDisplay) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? 'disabled' : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', true)">${getOpts(val)}</select>`;
+        let buildSel = (cls, val, disabled, mnv, dDisplay, title) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? `disabled title="${title}"` : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', true)">${getOpts(val)}</select>`;
 
-        employeeData.forEach(e => {
+        let filteredArray = employeeData.filter(e => {
             let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText); 
             let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
-            
-            if(!matchText || !matchDept || !matchBpGoc || !sStatuses.includes(e.leaveStatus)) return;
+            return matchText && matchDept && matchBpGoc && sStatuses.includes(e.leaveStatus);
+        });
 
+        renderPagination('adj', filteredArray.length, renderAdjustGrid);
+        let limit = pageState.adj.limit === 'ALL' ? filteredArray.length : pageState.adj.limit;
+        let page = pageState.adj.page;
+        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
+        let c = (page - 1) * limit + 1;
+
+        pagedData.forEach(e => {
             let mnv = e.mnv;
             let realMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
             let adjMeal = hcData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
@@ -3400,15 +3687,21 @@
             let noteVal = cache ? cache.note : (adjMeal ? adjMeal.note : (realMeal ? realMeal.note || '' : ''));
             
             let isResigned = e.leaveStatus === 'Đã nghỉ';
-            let trClass = isResigned ? 'row-resigned' : (adjMeal ? 'table-warning' : ''); 
+            let locks = getLockStatus(d.getTime(), e.leaveDate); 
+            if (isResigned && currentUser.role !== 'Admin_full') { locks.bf = true; locks.lu = true; locks.di = true; locks.ot = true; locks.all = true; locks.reason = 'Nhân viên đã nghỉ việc'; }
             
-            let selBf = buildSel('ms-bf border-danger', bfVal, false, mnv, dDisplay);
-            let selLu = buildSel('ms-lu border-danger', luVal, false, mnv, dDisplay);
-            let selDi = buildSel('ms-di border-danger', diVal, false, mnv, dDisplay);
-            let selOT = buildSel('ms-ot border-danger ot-select', otVal, false, mnv, dDisplay);
+            let trClass = isResigned ? 'row-resigned' : (locks.all ? 'row-locked' : (adjMeal ? 'table-warning' : '')); 
+            
+            let selBf = buildSel('ms-bf border-danger', bfVal, locks.bf, mnv, dDisplay, locks.reason);
+            let selLu = buildSel('ms-lu border-danger', luVal, locks.lu, mnv, dDisplay, locks.reason);
+            let selDi = buildSel('ms-di border-danger', diVal, locks.di, mnv, dDisplay, locks.reason);
+            let selOT = buildSel('ms-ot border-danger ot-select', otVal, locks.ot, mnv, dDisplay, locks.reason);
 			let escapedNote = String(noteVal).replace(/"/g, '&quot;');
-            let inpNote = `<input type="text" class="form-control form-control-sm meal-note border-danger" value="${escapedNote}" onblur="cacheRow(this, '${mnv}', '${dDisplay}', true)">`;            
-            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td>${c++}</td>${buildTbodyCols('adj', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', true)" title="Về 0"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            let inpNote = locks.all
+                ? `<input type="text" class="form-control form-control-sm meal-note border-0 text-center" disabled value="${escapedNote}" title="${locks.reason}">`
+                : `<input type="text" class="form-control form-control-sm meal-note border-danger" value="${escapedNote}" onblur="cacheRow(this, '${mnv}', '${dDisplay}', true)">`;            
+            
+            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('adj', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', true)" title="Về 0" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
         });
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['adj']||[]).length + 6}" class="text-center text-muted">Không tìm thấy NV</td></tr>`; enforceOtSelectPermission();
     }
@@ -3751,18 +4044,30 @@
             let matchStatus = sStatuses.includes(emp.leaveStatus || 'Đang làm việc');
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(emp.bp_goc);
             return matchRole && matchDept && matchText && matchStatus && matchBpGoc;
-        }); renderEmpTableHTML(filtered);
+        }); 
+        
+        renderPagination('emp', filtered.length, filterEmployees);
+        let limit = pageState.emp.limit === 'ALL' ? filtered.length : pageState.emp.limit;
+        let page = pageState.emp.page;
+        let pagedData = filtered.slice((page - 1) * limit, page * limit);
+        
+        renderEmpTableHTML(pagedData, (page - 1) * limit + 1);
     }
 
-    function renderEmpTableHTML(filteredData) {
+    function renderEmpTableHTML(filteredData, startIdx) {
         let tbody = document.getElementById('emp-table-body'); let html = [];
         document.getElementById('emp-thead').innerHTML = buildTheadHTML('emp');
         
-        filteredData.forEach((emp, index) => {
+        filteredData.forEach((emp) => {
             let escapedEmp = JSON.stringify(emp).replace(/'/g, "&#39;");
-            html.push(`<tr id="row-${emp.mnv}"><td class="text-center req-edit-role edit-col-bulk"><input type="checkbox" class="emp-checkbox" value="${emp.mnv}"></td><td class="text-muted fw-bold text-center">${index + 1}</td>${buildTbodyCols('emp', emp, inlineEditMode)}<td class="text-center req-edit-role edit-col-view"><button class="btn btn-sm btn-outline-primary py-0 px-2" onclick='openEmpModal(${escapedEmp})'><i class="fa-solid fa-pen"></i></button></td></tr>`);
+            html.push(`<tr id="row-${emp.mnv}"><td class="text-center req-edit-role edit-col-bulk"><input type="checkbox" class="emp-checkbox" value="${emp.mnv}"></td><td class="text-muted fw-bold text-center">${startIdx++}</td>${buildTbodyCols('emp', emp, inlineEditMode)}<td class="text-center req-edit-role edit-col-view"><button class="btn btn-sm btn-outline-primary py-0 px-2" onclick='openEmpModal(${escapedEmp})'><i class="fa-solid fa-pen"></i></button></td></tr>`);
         });
-        tbody.innerHTML = html.join(''); if (inlineEditMode) initFlatpickr(); 
+        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['emp']||[]).length + 3}" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
+        if (inlineEditMode) initFlatpickr(); 
+        
+        if(currentUser.role === 'Admin_full' && canEditEmp) {
+            document.querySelectorAll('.req-edit-role').forEach(el => el.classList.remove('d-none'));
+        }
     }
 
     function doInlineSave(el, mnv, field) {
@@ -4000,6 +4305,163 @@
             if(d.success) { await reloadEmployeeData(); filterEmployees(); showToast('Cập nhật quyền thành công', 'success'); } 
         });
     }
+// --- THÊM MỚI: Tự động chèn CSS bo tròn ngày hôm nay và tô xám ô bị khóa ---
+    (function() {
+        let style = document.createElement('style');
+        style.innerHTML = `
+            .vcal-box.today::before { display: none !important; }
+            .vcal-box .date-text { display: inline-block; padding: 2px 8px; border-radius: 12px; }
+            .vcal-box.today .date-text { background-color: var(--bim-green); color: white; }
+            select:disabled, input:disabled, textarea:disabled { background-color: #e9ecef !important; color: #6c757d !important; cursor: not-allowed; opacity: 1; border-color: #ced4da !important; }
+        `;
+        document.head.appendChild(style);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            ['vc-bf', 'vc-lu', 'vc-di', 'vc-ot', 'sd-bf', 'sd-lu', 'sd-di', 'sd-ot'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('meal-select');
+                    el.addEventListener('change', function() { updateSelectColor(this); });
+                }
+            });
+        });
+    })();
+
+    // --- THÊM MỚI: Hàm Cập nhật trạng thái khóa cho form bên phải của Lịch ---
+    function updateRightPanelLocks() {
+        let lockBf = false, lockLu = false, lockDi = false, lockOt = false;
+        if (selectedVcalDates.size > 0) {
+            selectedVcalDates.forEach(dateStr => {
+                let box = document.querySelector(`.vcal-box[data-date="${dateStr}"]`);
+                if (box) {
+                    if (box.getAttribute('data-lockbf') === 'true') lockBf = true;
+                    if (box.getAttribute('data-locklu') === 'true') lockLu = true;
+                    if (box.getAttribute('data-lockdi') === 'true') lockDi = true;
+                    if (box.getAttribute('data-lockot') === 'true') lockOt = true;
+                }
+            });
+        }
+        
+        let bfEl = document.getElementById('vc-bf'), luEl = document.getElementById('vc-lu'), diEl = document.getElementById('vc-di'), otEl = document.getElementById('vc-ot');
+        if (bfEl) { bfEl.disabled = lockBf; if (lockBf) { bfEl.value = '0'; updateSelectColor(bfEl); } }
+        if (luEl) { luEl.disabled = lockLu; if (lockLu) { luEl.value = '0'; updateSelectColor(luEl); } }
+        if (diEl) { diEl.disabled = lockDi; if (lockDi) { diEl.value = '0'; updateSelectColor(diEl); } }
+        if (otEl) {
+            if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) { otEl.disabled = true; } 
+            else { otEl.disabled = lockOt; if (lockOt) { otEl.value = '0'; updateSelectColor(otEl); } }
+        }
+    }	
+// --- THÊM MỚI: CÁC BIẾN TOÀN CỤC CHO PREVIEW ---
+    let pendingSubmitData = [];
+    let pendingSubmitMode = ''; // 'ro' hoặc 'adj'
+
+    // --- THÊM MỚI: HÀM XỬ LÝ VÀ HIỂN THỊ MODAL PREVIEW ---
+    function processAndPreviewChanges(rawRequests, mode) {
+        let tbody = document.getElementById('preview-changes-tbody');
+        tbody.innerHTML = '';
+        pendingSubmitData = [];
+        pendingSubmitMode = mode;
+        let html = [];
+        let hasChanges = false;
+
+        rawRequests.forEach(req => {
+            let mnv = req.mnv;
+            let emp = employeeData.find(e => String(e.mnv) === String(mnv)) || { name: req.name, leaveDate: '' };
+            let dTime = parseToDateObj(req.date).getTime();
+            let locks = getLockStatus(dTime, emp.leaveDate);
+            
+            // Lấy dữ liệu hiện tại đang có
+            let targetData = mode === 'adj' ? hcData : dashboardData;
+            let myMeal = targetData.find(m => String(m.mnv) === String(mnv) && m.date === req.date);
+            if (mode === 'adj' && !myMeal) {
+                myMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === req.date);
+            }
+            
+            let exBf = myMeal ? (myMeal.breakfast || '0') : '0';
+            let exLu = myMeal ? (myMeal.lunch || '0') : '0';
+            let exDi = myMeal ? (myMeal.dinner || '0') : '0';
+            let exOt = myMeal ? (myMeal.ot || '0') : '0';
+            let exNote = myMeal ? (myMeal.note || '') : '';
+
+            // Nếu buổi bị khóa, ép về giá trị cũ (bỏ qua giá trị upload)
+            let finalBf = locks.bf ? exBf : req.reqBf;
+            let finalLu = locks.lu ? exLu : req.reqLu;
+            let finalDi = locks.di ? exDi : req.reqDi;
+            let finalOt = locks.ot ? exOt : req.reqOt;
+            let finalNote = locks.all ? exNote : req.reqNote; 
+            
+            // Kiểm tra xem user có đang cố tình thay đổi vào ô bị khóa không
+            let bfBlocked = locks.bf && req.reqBf !== exBf;
+            let luBlocked = locks.lu && req.reqLu !== exLu;
+            let diBlocked = locks.di && req.reqDi !== exDi;
+            let otBlocked = locks.ot && req.reqOt !== exOt;
+            
+            // Kiểm tra xem có sự thay đổi dữ liệu nào hợp lệ không
+            let isBfChanged = finalBf !== exBf;
+            let isLuChanged = finalLu !== exLu;
+            let isDiChanged = finalDi !== exDi;
+            let isOtChanged = finalOt !== exOt;
+            let isNoteChanged = finalNote !== exNote;
+
+            // Chỉ hiển thị lên bảng nếu dòng này CÓ thay đổi hợp lệ HOẶC bị chặn khóa
+            if (isBfChanged || isLuChanged || isDiChanged || isOtChanged || isNoteChanged || bfBlocked || luBlocked || diBlocked || otBlocked) {
+                hasChanges = true;
+                
+                // Đưa dữ liệu CHÍNH THỨC sẽ lưu vào mảng pending
+                pendingSubmitData.push({
+                    mnv: mnv, name: emp.name, date: req.date,
+                    breakfast: finalBf, lunch: finalLu, dinner: finalDi, ot: finalOt, note: finalNote
+                });
+                
+                // Hàm render UI từng ô Excel
+                let renderDisplay = (reqV, finalV, exV, isBlocked) => {
+                    let textReq = reqV === '0' ? 'O' : reqV;
+                    let textFin = finalV === '0' ? 'O' : finalV;
+                    let textEx = exV === '0' ? 'O' : exV;
+                    if (isBlocked) {
+                        return `<span class="text-danger text-decoration-line-through fw-bold" title="Bị khóa">${textReq}</span><br><span class="badge bg-secondary" style="font-size:0.7em;">Giữ cũ: ${textEx}</span>`;
+                    }
+                    if (reqV !== exV) {
+                        return `<span class="badge bg-success fs-6">${textFin}</span>`; // Đổi thành công
+                    }
+                    return `<span class="text-muted fw-bold">${textFin}</span>`; // Không thay đổi
+                }
+
+                html.push(`<tr>
+                    <td class="fw-bold">${mnv}</td>
+                    <td class="text-start">${emp.name}</td>
+                    <td class="fw-bold text-primary">${req.date}</td>
+                    <td class="align-middle">${renderDisplay(req.reqBf, finalBf, exBf, bfBlocked)}</td>
+                    <td class="align-middle">${renderDisplay(req.reqLu, finalLu, exLu, luBlocked)}</td>
+                    <td class="align-middle">${renderDisplay(req.reqDi, finalDi, exDi, diBlocked)}</td>
+                    <td class="align-middle ot-col">${renderDisplay(req.reqOt, finalOt, exOt, otBlocked)}</td>
+                    <td class="text-start align-middle">${locks.all && req.reqNote !== exNote ? `<span class="text-danger text-decoration-line-through">${req.reqNote}</span>` : finalNote}</td>
+                </tr>`);
+            }
+        });
+        
+        if (hasChanges) {
+            tbody.innerHTML = html.join('');
+            enforceOtSelectPermission();
+            new bootstrap.Modal(document.getElementById('previewChangesModal')).show();
+        } else {
+            showToast("Không có thay đổi nào hợp lệ, hoặc dữ liệu tải lên giống hệt dữ liệu cũ!", "warning");
+        }
+    }
+
+    // --- THÊM MỚI: HÀM XÁC NHẬN LƯU TỪ MODAL ---
+    function confirmPendingChanges() {
+        if(pendingSubmitData.length === 0) return;
+        let modalEl = document.getElementById('previewChangesModal');
+        let modalObj = bootstrap.Modal.getInstance(modalEl);
+        if (modalObj) modalObj.hide();
+
+        if (pendingSubmitMode === 'adj') {
+            sendAdjustData(pendingSubmitData);
+        } else {
+            sendMealData(pendingSubmitData);
+        }
+    }	
 </script>
 </body>
-</html>
+</html>	
