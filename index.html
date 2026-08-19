@@ -163,6 +163,109 @@ body.role-nhanvien .ot-col select:disabled, body.role-nhanvien .ot-wrapper selec
         .pagination-container button { background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 3px 8px; cursor: pointer; color: #333; }
         .pagination-container button:hover:not(:disabled) { background: #e2e6ea; }
         .pagination-container button:disabled { opacity: 0.5; cursor: not-allowed; }
+/* ==================================================
+   MOBILE OPTIMIZATION (Chỉ áp dụng cho màn hình nhỏ)
+   ================================================== */
+@media (max-width: 991.98px) {
+    /* --- CHỐNG TRÀN MÀN HÌNH TỔNG THỂ --- */
+    html, body { max-width: 100vw !important; overflow-x: hidden !important; }
+
+    /* 1. Sửa Header Đếm ngược rớt dòng */
+    #header-countdown { font-size: 0.75em !important; min-width: unset !important; border-right: none !important; }
+    #header-countdown > div { flex-wrap: wrap !important; justify-content: center !important; gap: 5px !important; }
+    .navbar-brand img { height: 24px !important; }
+    .navbar-brand span { font-size: 14px !important; white-space: normal; line-height: 1.2; }
+
+    /* 2. SỬA KỲ LƯƠNG (ÉP TRÊN 1 DÒNG NGANG) */
+    #mode-vcal .bg-light.d-flex { 
+        padding: 5px !important; 
+        flex-direction: row !important; /* Ép nằm ngang */
+        flex-wrap: nowrap !important; /* Không cho rớt dòng */
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+    #mode-vcal .bg-light.d-flex > button { padding: 2px 6px !important; font-size: 0.75em !important; }
+    #vcal-cycle-title { font-size: 0.8em !important; padding: 0 4px !important; margin: 0 !important; white-space: nowrap; }
+    #mode-vcal .bg-light.d-flex .position-absolute { position: static !important; } /* Hủy định vị tuyệt đối của nút màu cam */
+    #mode-vcal .bg-light.d-flex .btn-sm { padding: 2px 6px !important; font-size: 0.8em !important; height: auto; }
+
+    /* 3. BÓP CHẶT LỊCH (CALENDAR) CHỐNG TRÀN NGANG */
+    .calendar-wrapper { padding: 3px !important; margin: 0 !important; overflow: hidden; border-radius: 6px;}
+    .calendar-header { gap: 2px !important; font-size: 0.75em; margin-bottom: 4px; }
+    .vcal-container { gap: 2px !important; }
+    .vcal-box { padding: 2px 1px !important; min-height: 55px !important; border-radius: 4px !important; }
+    .vcal-box .date-text { font-size: 0.7em !important; padding: 1px 2px !important; letter-spacing: -0.5px; }
+    
+    /* 4. TỐI ƯU BOTTOM SHEET (HIỂN THỊ CHUẨN 2 CỘT) */
+    .vcal-form-wrapper {
+        position: fixed;
+        bottom: 0; left: 0; width: 100%;
+        z-index: 1040;
+        background: #fff;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom)) 10px !important;
+        height: auto !important; 
+    }
+    
+    .vcal-form-wrapper .card { height: auto !important; margin-bottom: 0 !important; box-shadow: none !important; background: transparent !important;}
+    .vcal-form-wrapper .card-body { padding: 0 !important; }
+    .vcal-form-wrapper h6 { font-size: 0.85em; margin-bottom: 5px !important; padding-bottom: 5px !important; }
+    
+    /* KHẮC PHỤC LỖI 1 CỘT: Xóa khoảng trống gap dư thừa để Bootstrap chia đúng 50-50 */
+    .vcal-form-wrapper .row.g-3, .vcal-form-wrapper .row.g-2 { gap: 0 !important; margin-left: -4px !important; margin-right: -4px !important; }
+    .vcal-form-wrapper .col-6 { width: 50% !important; padding: 0 4px !important; margin-bottom: 6px !important; }
+    .vcal-form-wrapper .col-12 { padding: 0 4px !important; margin-bottom: 6px !important; }
+    
+    /* Thu nhỏ các form select và input */
+    .vcal-form-wrapper .form-select, .vcal-form-wrapper .form-control { font-size: 0.85em; padding: 2px 20px 2px 6px; height: 30px; }
+    .vcal-form-wrapper label { margin-bottom: 1px; font-size: 0.75em !important; }
+    
+    /* Nút Xóa/Lưu nằm ngang 2 cột */
+    .vcal-form-wrapper .mt-auto { margin-top: 4px !important; padding-top: 6px !important; border-top: 1px solid #eee; }
+    .vcal-form-wrapper .btn { padding: 6px 0 !important; font-size: 0.85em !important; }
+
+    /* Đẩy nội dung Lịch lên cao hơn Form */
+    #mode-vcal .row.align-items-stretch { padding-bottom: 170px !important; }
+    
+    /* 5. Tối ưu dạng Lưới (Grid) */
+    #reg-grid-body td:nth-child(1), #reg-grid-thead th:nth-child(1) { position: sticky; left: 0; background-color: #f8f9fa; z-index: 2; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+    #reg-grid-thead th:nth-child(1) { z-index: 3; }
+    #mode-cycle .toolbar-filter { position: sticky; top: -15px; z-index: 1030; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); }
+}
+
+/* Kỹ thuật ẩn/hiện chữ dài-ngắn theo kích thước màn hình */
+@media (max-width: 767.98px) {
+    .meal-text-long { display: none !important; }
+    .meal-text-short { display: inline !important; }
+    .meal-info .badge { font-size: 0.65em; padding: 2px; white-space: normal; line-height: 1.1; margin-bottom: 1px;}
+}
+@media (min-width: 768px) {
+    .meal-text-long { display: inline !important; }
+    .meal-text-short { display: none !important; }
+}
+
+/* Kỹ thuật ẩn/hiện chữ dài-ngắn theo kích thước màn hình */
+@media (max-width: 767.98px) {
+    .meal-text-long { display: none !important; }
+    .meal-text-short { display: inline !important; }
+    .meal-info .badge { font-size: 0.65em; padding: 2px; white-space: normal; line-height: 1.1; margin-bottom: 1px;}
+}
+@media (min-width: 768px) {
+    .meal-text-long { display: inline !important; }
+    .meal-text-short { display: none !important; }
+}
+/* Kỹ thuật ẩn/hiện chữ dài-ngắn theo kích thước màn hình */
+@media (max-width: 767.98px) {
+    .meal-text-long { display: none !important; }
+    .meal-text-short { display: inline !important; }
+    .meal-info .badge { font-size: 0.65em; padding: 2px; white-space: normal; line-height: 1.1; }
+}
+@media (min-width: 768px) {
+    .meal-text-long { display: inline !important; }
+    .meal-text-short { display: none !important; }
+}		
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -294,7 +397,7 @@ body.role-nhanvien .ot-col select:disabled, body.role-nhanvien .ot-wrapper selec
                                             <div class="vcal-container" id="vcal-grid"></div>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 order-2 mt-3 mt-lg-0">
+                                    <div class="col-lg-4 order-2 mt-3 mt-lg-0 vcal-form-wrapper">
                                         <div class="card border-0 shadow bg-light h-100 sticky-lg-top" style="top: 10px; z-index: 10;">
                                             <div class="card-body d-flex flex-column p-3 p-md-4">
                                                 <h6 class="fw-bold mb-3 border-bottom pb-2 text-bim"><i class="fa-solid fa-pen-to-square"></i> Chọn suất ăn (Tô xanh):</h6>
@@ -2273,8 +2376,7 @@ function startCountdown() {
                 let otHtml = !isStaff 
                     ? `<div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-danger">OT: ${fmt(diffOt)} (${dOtFmt})</span></div>` 
                     : ''; 
-
-                headerCount.innerHTML = `<div class="d-flex flex-row flex-nowrap gap-3 justify-content-end align-items-center" style="font-size: 0.85em;"><div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-success">Cơm: ${fmt(diffMain)} (${dMainFmt})</span></div>${otHtml}</div>`;
+headerCount.innerHTML = `<div class="d-flex flex-row flex-wrap gap-2 justify-content-end align-items-center" style="font-size: 0.85em;"><div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-success">Cơm: ${fmt(diffMain)} (${dMainFmt})</span></div>${otHtml}</div>`;
             }
             if (now.getSeconds() === 0) checkNotifications();
         }, 1000); 
@@ -3850,10 +3952,11 @@ function renderVcal() {
             let mealText = "";
             if (myMeal && (myMeal.breakfast !== '0' || myMeal.lunch !== '0' || myMeal.dinner !== '0' || myMeal.ot !== '0')) {
                 let mArr = [];
-                if(myMeal.breakfast && myMeal.breakfast !== '0') mArr.push(`<span class="badge border border-primary text-primary bg-primary bg-opacity-10 fw-bold">Sáng: ${getShortMealName(myMeal.breakfast)}</span>`);
-                if(myMeal.lunch && myMeal.lunch !== '0') mArr.push(`<span class="badge border border-success text-success bg-success bg-opacity-10 fw-bold">Trưa: ${getShortMealName(myMeal.lunch)}</span>`);
-                if(myMeal.dinner && myMeal.dinner !== '0') mArr.push(`<span class="badge border fw-bold" style="color: #6f42c1; border-color: #6f42c1; background-color: rgba(111, 66, 193, 0.1);">Chiều: ${getShortMealName(myMeal.dinner)}</span>`);
-                if(currentUser.role !== 'Nhan_Vien' && myMeal.ot && myMeal.ot !== '0') mArr.push(`<span class="badge border border-danger text-danger bg-danger bg-opacity-10 fw-bold">OT: ${getShortMealName(myMeal.ot)}</span>`);
+ let bBT = getShortMealName(myMeal.breakfast), bLU = getShortMealName(myMeal.lunch), bDI = getShortMealName(myMeal.dinner), bOT = getShortMealName(myMeal.ot);
+if(myMeal.breakfast && myMeal.breakfast !== '0') mArr.push(`<span class="badge border border-primary text-primary bg-primary bg-opacity-10 fw-bold"><span class="meal-text-long">Sáng: </span><span class="meal-text-short">S:</span>${bBT}</span>`);
+if(myMeal.lunch && myMeal.lunch !== '0') mArr.push(`<span class="badge border border-success text-success bg-success bg-opacity-10 fw-bold"><span class="meal-text-long">Trưa: </span><span class="meal-text-short">T:</span>${bLU}</span>`);
+if(myMeal.dinner && myMeal.dinner !== '0') mArr.push(`<span class="badge border fw-bold" style="color: #6f42c1; border-color: #6f42c1; background-color: rgba(111, 66, 193, 0.1);"><span class="meal-text-long">Chiều: </span><span class="meal-text-short">C:</span>${bDI}</span>`);
+if(currentUser.role !== 'Nhan_Vien' && myMeal.ot && myMeal.ot !== '0') mArr.push(`<span class="badge border border-danger text-danger bg-danger bg-opacity-10 fw-bold"><span class="meal-text-long">OT: </span><span class="meal-text-short">O:</span>${bOT}</span>`);
                 mealText = `<div class="meal-info">` + mArr.join('') + `</div>`;
             }
 
