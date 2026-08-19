@@ -1208,12 +1208,14 @@
     }
 
     // 2. HÀM GỌI API TRUNG TÂM
-async function fetchAPI(payload) {
+    async function fetchAPI(payload) {
+        // Tự động gán reqId nếu chưa có
         if (!payload.reqId) payload.reqId = generateReqId();
+        
         let response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8' 
+                'Content-Type': 'text/plain;charset=utf-8' // Đảm bảo là Simple Request
             },
             body: JSON.stringify(payload)
         });
@@ -1222,15 +1224,7 @@ async function fetchAPI(payload) {
         try {
             return JSON.parse(text);
         } catch (e) {
-            console.error("Phản hồi thô:", text);
-            // Bắt lỗi nếu Google trả về giao diện HTML 404
-            if (text.includes("<!DOCTYPE html>") || text.includes("không thể mở tệp")) {
-                throw new Error("Lỗi xác thực Google: Vui lòng đăng xuất bớt các tài khoản Google khác hoặc dùng Tab Ẩn danh.");
-            } 
-            // Bắt lỗi nếu bị vướng vào luồng doGet
-            else if (text.includes("hoạt động bình thường")) {
-                throw new Error("Lỗi cấu hình API: Hãy đảm bảo Apps Script đã được deploy dưới dạng 'New Version'.");
-            }
+            console.error("Lỗi Parse JSON từ Google Server. Phản hồi thô:", text);
             throw new Error("Lỗi định dạng dữ liệu từ máy chủ.");
         }
     }
