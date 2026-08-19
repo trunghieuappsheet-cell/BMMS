@@ -265,7 +265,17 @@ body.role-nhanvien .ot-col select:disabled, body.role-nhanvien .ot-wrapper selec
 @media (min-width: 768px) {
     .meal-text-long { display: inline !important; }
     .meal-text-short { display: none !important; }
-}		
+}	
+/* --- KHẮC PHỤC LỖI BẢNG CHỌN SUẤT ĂN ĐÈ LÊN MÀN HÌNH LOGIN --- */
+    #app-wrapper.d-none { 
+        display: none !important; 
+    }
+    body:has(#view-login:not(.d-none)) .vcal-form-wrapper { 
+        display: none !important; 
+    }
+    #view-login:not(.d-none) ~ #app-wrapper {
+        display: none !important;
+    }		
     </style>
 </head>
 <body oncontextmenu="return false;">
