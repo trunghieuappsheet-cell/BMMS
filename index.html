@@ -20,8 +20,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
+		/* CSS cho ô hiệu chỉnh trống (Mặc định) */
+        .meal-select.val- { background-color: #fff; color: #adb5bd !important; border: 1px dashed #ced4da; }
         :root { --bim-green: #00693c; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; overflow-x: hidden; height: 100vh; margin: 0; display: flex; flex-direction: column;}
         
@@ -53,7 +56,20 @@
             .tree-filter { width: 250px; }
         }
         
-        .table-responsive-stretch { overflow-x: auto; width: 100%; overflow-y: visible; background: #fff; border-radius: 8px; border: 1px solid #ddd; position: relative; margin-bottom: 10px;}
+/* Fix bảng bị lẹm đáy và cố định Tiêu đề khi cuộn */
+        .table-responsive-stretch { overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 240px); width: 100%; background: #fff; border-radius: 8px; border: 1px solid #ddd; position: relative; margin-bottom: 0;}
+        .table-responsive-stretch thead th { position: sticky; top: 0; z-index: 2; background-color: #f8f9fa; }
+        
+        /* Căn chỉnh lại Form Hiệu chỉnh kép (Ảnh 1) */
+        .dual-cell { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 120px; }
+        .dual-cell > div { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;}
+        .dual-cell select { padding-left: 4px; padding-right: 18px; background-position: right 0.25rem center; width: 100%; text-align-last: center;}
+        .dual-cell .real-val { width: 100%; height: 29px; display: flex; align-items: center; justify-content: center; font-size: 0.95em; border-width: 1px !important;}
+        
+        /* Định dạng Bảng Báo cáo Ngày (Ảnh 2) */
+        .border-double-right { border-right: 3px double #00693c !important; }
+        .rep-day-header th { background-color: #00693c !important; color: white !important; font-weight: bold; text-align: center; vertical-align: middle; border: 1px solid #004d2c;}
+        .rep-day-sub th { background-color: #e6f2eb !important; color: #00693c !important; font-weight: bold; text-align: center; border: 1px solid #ccc; font-size: 0.9em;}
         .scroll-wrapper { transition: 0.3s; }
         .scroll-wrapper:hover .scroll-btn-left, .scroll-wrapper:hover .scroll-btn-right { opacity: 1 !important; }
         
@@ -117,7 +133,8 @@
         .drag-item { display: flex; align-items: center; padding: 8px; border: 1px solid #ddd; background: #fff; margin-bottom: 4px; border-radius: 4px; }
         .drag-item.dragging { opacity: 0.5; border: 2px dashed var(--bim-green); }
 
-        body.role-nhanvien .ot-col, body.role-nhanvien .ot-wrapper { display: none !important; }
+/* Đã xóa lệnh ẩn cột OT, hệ thống sẽ dùng JS để tô xám (disabled) và không cho chọn */
+body.role-nhanvien .ot-col select:disabled, body.role-nhanvien .ot-wrapper select:disabled { opacity: 0.6; cursor: not-allowed; }
         #unregChart { min-height: 450px; }
         
         .meal-select { appearance: none; -webkit-appearance: none; -moz-appearance: none; text-align: center; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; background-image: none !important; padding-right: 0 !important; }
@@ -442,62 +459,73 @@
                 </div>
             </div>
 <!-- TAB 2: BÁO CÁO (MỚI) -->
-            <div id="view-reports" class="page-view d-none">
-                <div class="toolbar-filter">
-                    <input type="text" id="rep-search" class="form-control form-control-sm border-primary filter-item search-input" placeholder="Tìm kiếm..." onkeyup="debounceSearch(renderReports, 100)">
-                    <select id="rep-filter-type" class="form-select form-select-sm border-secondary fw-bold filter-item select-filter" onchange="changeFilterType('rep')"><option value="today">Hôm nay</option><option value="cycle">Kỳ lương</option><option value="custom">Khoảng thời gian</option></select>
-                    <div class="d-flex align-items-center flex-nowrap filter-item date-filter">
-                        <button class="btn btn-sm btn-outline-secondary rounded-end-0 border-secondary px-2" onclick="changeDateStep('rep', -1)"><i class="fa-solid fa-chevron-left"></i></button>
-                        <input type="text" id="rep-date" class="form-control form-control-sm border-secondary fw-bold text-center rounded-0 flatpickr-date flatpickr-input flex-grow-1" placeholder="dd/mm/yyyy">
-                        <button class="btn btn-sm btn-outline-secondary rounded-start-0 border-secondary px-2" onclick="changeDateStep('rep', 1)"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                    <div class="dropdown filter-item tree-filter">
-                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start text-truncate" type="button" data-bs-toggle="dropdown">Cây Bộ Phận</button>
-                        <ul class="dropdown-menu tree-dropdown-menu shadow w-150" id="rep-dept-tree" onclick="event.stopPropagation()"></ul>
-                    </div>
-                    <div class="dropdown filter-item">
-                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start text-truncate" type="button" data-bs-toggle="dropdown">BP chấm công</button>
-                        <ul class="dropdown-menu shadow p-2" id="filter-bpgoc-rep" onclick="event.stopPropagation()" style="min-width: 280px; max-height: 300px; overflow-y: auto;"></ul>
-                    </div>
-                    <div class="dropdown filter-item">
-                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start" type="button" data-bs-toggle="dropdown">Tình trạng</button>
-                        <ul class="dropdown-menu shadow p-2" id="filter-status-rep" onclick="event.stopPropagation()">
-                            <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đang làm việc" checked onchange="renderReports()"> Đang làm việc</label></li>
-                            <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đã nghỉ" onchange="renderReports()"> Đã nghỉ</label></li>
-                        </ul>
-                    </div>
-                    
-                    <select id="rep-data-type" class="form-select form-select-sm border-danger fw-bold filter-item text-danger" onchange="renderReports()" style="width: auto;">
-                        <option value="REAL">Thực tế</option>
-                        <option value="ADJ">Hiệu chỉnh</option>
-                    </select>
+<div id="view-reports" class="page-view d-none">
+    <div class="toolbar-filter">
+        <input type="text" id="rep-search" class="form-control form-control-sm border-primary filter-item search-input" placeholder="Tìm kiếm..." onkeyup="debounceSearch(renderReports, 100)">
+        <select id="rep-filter-type" class="form-select form-select-sm border-secondary fw-bold filter-item select-filter" onchange="changeFilterType('rep')"><option value="today">Hôm nay</option><option value="cycle">Kỳ lương</option><option value="custom">Khoảng thời gian</option></select>
+        <div class="d-flex align-items-center flex-nowrap filter-item date-filter">
+            <button class="btn btn-sm btn-outline-secondary rounded-end-0 border-secondary px-2" onclick="changeDateStep('rep', -1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <input type="text" id="rep-date" class="form-control form-control-sm border-secondary fw-bold text-center rounded-0 flatpickr-date flatpickr-input flex-grow-1" placeholder="dd/mm/yyyy">
+            <button class="btn btn-sm btn-outline-secondary rounded-start-0 border-secondary px-2" onclick="changeDateStep('rep', 1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="dropdown filter-item tree-filter">
+            <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start text-truncate" type="button" data-bs-toggle="dropdown">Cây Bộ Phận</button>
+            <ul class="dropdown-menu tree-dropdown-menu shadow w-150" id="rep-dept-tree" onclick="event.stopPropagation()"></ul>
+        </div>
+        <div class="dropdown filter-item">
+            <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start text-truncate" type="button" data-bs-toggle="dropdown">BP chấm công</button>
+            <ul class="dropdown-menu shadow p-2" id="filter-bpgoc-rep" onclick="event.stopPropagation()" style="min-width: 280px; max-height: 300px; overflow-y: auto;"></ul>
+        </div>
+        <div class="dropdown filter-item">
+            <button class="btn btn-outline-secondary dropdown-toggle btn-sm bg-white text-dark border-secondary w-100 text-start" type="button" data-bs-toggle="dropdown">Tình trạng</button>
+            <ul class="dropdown-menu shadow p-2" id="filter-status-rep" onclick="event.stopPropagation()">
+                <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đang làm việc" checked onchange="renderReports()"> Đang làm việc</label></li>
+                <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đã nghỉ" onchange="renderReports()"> Đã nghỉ</label></li>
+            </ul>
+        </div>
+        
+        <!-- Bị ẩn đi do Menu đã điều khiển trực tiếp -->
+        <select id="rep-data-type" class="form-select form-select-sm border-danger fw-bold filter-item text-danger d-none" onchange="renderReports()" style="width: auto;">
+            <option value="REAL">Thực tế</option>
+            <option value="ADJ">Hiệu chỉnh</option>
+        </select>
 
-                    <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('rep')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
-                    
-                    <div class="ms-auto d-flex gap-2 flex-wrap">
-                        <select id="rep-export-type" class="form-select form-select-sm border-success fw-bold filter-item text-success" style="width: auto;">
-                            <option value="DETAIL">Bản chi tiết</option>
-                            <option value="COMPACT">Bản gọn</option>
-                        </select>
-                        <button class="btn btn-success btn-sm fw-bold filter-item shadow-sm" onclick="exportReportsExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo</button>
-                    </div>
-                </div>
-                
-                <div class="row text-center mb-3 g-3">
-                    <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #0d6efd;"><i class="fa-solid fa-mug-saucer"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG SÁNG</h6><div class="dash-stat" id="rep-sang">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-sang-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-sang-hy" class="fs-5">0</span></span></div></div></div>
-                    <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #198754;"><i class="fa-solid fa-bowl-rice"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TRƯA</h6><div class="dash-stat" id="rep-trua">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-trua-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-trua-hy" class="fs-5">0</span></span></div></div></div>
-                    <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #6f42c1;"><i class="fa-solid fa-burger"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG CHIỀU</h6><div class="dash-stat" id="rep-toi">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-toi-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-toi-hy" class="fs-5">0</span></span></div></div></div>
-                    <div class="col-6 col-md-3 ot-col"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #dc3545;"><i class="fa-solid fa-hotdog"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TĂNG CA</h6><div class="dash-stat" id="rep-ot">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-ot-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-ot-hy" class="fs-5">0</span></span></div></div></div>
-                </div>
+        <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('rep')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
+        
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            <select id="rep-export-type" class="form-select form-select-sm border-success fw-bold filter-item text-success" style="width: auto;">
+                <option value="DETAIL">Bản chi tiết</option>
+                <option value="COMPACT">Bản gọn</option>
+            </select>
+            <button class="btn btn-success btn-sm fw-bold filter-item shadow-sm" onclick="exportReportsExcel()"><i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo</button>
+        </div>
+    </div>
+    
+    <div class="row text-center mb-3 g-3">
+        <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #0d6efd;"><i class="fa-solid fa-mug-saucer"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG SÁNG</h6><div class="dash-stat" id="rep-sang">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-sang-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-sang-hy" class="fs-5">0</span></span></div></div></div>
+        <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #198754;"><i class="fa-solid fa-bowl-rice"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TRƯA</h6><div class="dash-stat" id="rep-trua">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-trua-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-trua-hy" class="fs-5">0</span></span></div></div></div>
+        <div class="col-6 col-md-3"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #6f42c1;"><i class="fa-solid fa-burger"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG CHIỀU</h6><div class="dash-stat" id="rep-toi">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-toi-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-toi-hy" class="fs-5">0</span></span></div></div></div>
+        <div class="col-6 col-md-3 ot-col"><div class="card dash-card text-white p-2 p-md-3 shadow-sm h-100" style="background-color: #dc3545;"><i class="fa-solid fa-hotdog"></i><h6 class="fw-bold text-uppercase opacity-75 m-0" style="letter-spacing:1px;">TỔNG TĂNG CA</h6><div class="dash-stat" id="rep-ot">0</div><div class="dash-sub d-flex gap-2 justify-content-center"><span class="badge bg-white text-primary px-2 py-1 fs-6 shadow-sm">BT: <span id="rep-ot-bt" class="fs-5">0</span></span><span class="badge bg-white text-danger px-2 py-1 fs-6 shadow-sm">HY: <span id="rep-ot-hy" class="fs-5">0</span></span></div></div></div>
+    </div>
 
-                <div class="table-responsive-stretch shadow-sm border-0 mb-0">
-                    <table class="table table-hover mb-0 align-middle text-nowrap" id="table-rep" style="font-size: 0.9em;">
-                        <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="rep-thead"></tr></thead>
-                        <tbody id="rep-table-body"></tbody>
-                    </table>
-                </div>
-                <div id="pagination-rep" class="pagination-container"></div>
-            </div>
+    <!-- KHU VỰC HIỂN THỊ DẠNG BẢNG -->
+    <div id="rep-table-container">
+        <div class="table-responsive-stretch shadow-sm border-0 mb-0">
+            <table class="table table-hover mb-0 align-middle text-nowrap" id="table-rep" style="font-size: 0.9em;">
+                <thead class="table-light position-sticky top-0 z-1 shadow-sm"><tr id="rep-thead"></tr></thead>
+                <tbody id="rep-table-body"></tbody>
+            </table>
+        </div>
+        <div id="pagination-rep" class="pagination-container"></div>
+    </div>
+    
+    <!-- KHU VỰC HIỂN THỊ DẠNG BIỂU ĐỒ -->
+    <div id="rep-chart-container" class="card shadow-sm border-0 bg-white rounded d-none">
+        <div class="card-body">
+            <div style="height: 60vh; width: 100%;"><canvas id="repDayChart"></canvas></div>
+        </div>
+    </div>
+</div>
 
             <!-- TAB 3: DASHBOARD -->
             <div id="view-dashboard" class="page-view d-none">
@@ -571,12 +599,18 @@
                             <li><label class="form-check-label w-100"><input type="checkbox" class="form-check-input status-cb me-2" value="Đã nghỉ" onchange="renderAdjustGrid()"> Đã nghỉ</label></li>
                         </ul>
                     </div>
+			
                     <button class="btn btn-outline-secondary btn-sm fw-bold filter-item" onclick="openColSettings('adj')" style="max-width: max-content;"><i class="fa-solid fa-table-columns"></i> Cột</button>
                     
                     <div class="ms-auto d-flex gap-1 align-items-center flex-wrap filter-item justify-content-md-end">
-                        <button class="btn btn-outline-success fw-bold shadow-sm btn-sm px-2 text-nowrap" onclick="downloadExcelTemplate('adj')"><i class="fa-solid fa-download"></i> MẪU</button>
-                        <button class="btn btn-outline-primary fw-bold shadow-sm btn-sm px-2 text-nowrap" onclick="document.getElementById('hc-upload-input').click()"><i class="fa-solid fa-upload"></i> UPLOAD</button>
-                        <button class="btn btn-bim fw-bold shadow-sm btn-sm px-3 text-nowrap" onclick="submitAdjustGrid()"><i class="fa-solid fa-save"></i> LƯU HC</button>
+
+                    
+                    <button class="btn btn-success btn-sm ms-2" onclick="exportAdjustExcel()"><i class="fa-solid fa-file-excel"></i> Xuất</button>
+                    
+                    <!-- THÊM 2 DÒNG NÀY ĐỂ NHẬP FILE -->
+                    <input type="file" id="import-adj-file" accept=".xlsx" style="display: none;" onchange="importAdjustExcel(event)">
+                    <button class="btn btn-outline-success btn-sm ms-2" onclick="document.getElementById('import-adj-file').click()"><i class="fa-solid fa-upload"></i> Nhập</button>
+					<button class="btn btn-primary btn-sm" onclick="submitAdjustGrid()"><i class="fa-solid fa-save"></i> Lưu</button>
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mb-2 justify-content-center justify-content-md-start">
@@ -1179,8 +1213,45 @@
         </div>
     </div>
 </div>
+<!-- MODAL XÁC NHẬN NHẬP EXCEL HIỆU CHỈNH -->
+    <div class="modal fade" id="confirm-adj-import-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-success fw-bold"><i class="fa-solid fa-list-check"></i> Xác nhận dữ liệu Hiệu chỉnh từ Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="alert alert-warning m-3 py-2">
+                        <i class="fa-solid fa-circle-info"></i> Hệ thống đã tự động loại bỏ các dòng không có sự thay đổi. Dưới đây là danh sách <b>những nhân sự thực sự được hiệu chỉnh</b>:
+                    </div>
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-bordered table-hover mb-0 text-center" style="font-size: 0.9em;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="align-middle">Mã NV</th>
+                                    <th class="text-start align-middle">Họ và tên</th>
+                                    <th class="align-middle">Ngày ăn</th>
+                                    <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="modal-th-bf">Sáng</th>
+                                    <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="modal-th-lu">Trưa</th>
+                                    <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="modal-th-di">Chiều</th>
+                                    <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="modal-th-ot">Tăng ca</th>
+                                    <th class="text-start align-middle" style="min-width: 150px;">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="confirm-adj-import-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="button" class="btn btn-success" onclick="processAdjImport()"><i class="fa-solid fa-check"></i> Tiếp tục Nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyCzASAa-o6NFcEM7WOZrdW-_1zYK81taxMtyqaEzDj-bf_772xmxGcqZ-knqrZo3bz/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwwWMMAwPtO-BOJE8pGMeR9NOZn5Ekl6ceV6Lhbky7-pO2QSyP89ehcddFA4_QtZn2M/exec';
     let currentUser = null, dashboardData = [], employeeData = [], holidaysData = [], appSettings = {}, hcData = [];
     let currentCycleOffset = 0, searchTimeout, realtimeTimer;
     let selectedVcalDates = new Set(), unregChartInstance = null, unregDataCache = {}, currentUnregDept = ""; 
@@ -1209,13 +1280,11 @@
 
     // 2. HÀM GỌI API TRUNG TÂM
     async function fetchAPI(payload) {
-        // Tự động gán reqId nếu chưa có
         if (!payload.reqId) payload.reqId = generateReqId();
-        
         let response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // Đảm bảo là Simple Request
+                'Content-Type': 'text/plain;charset=utf-8' 
             },
             body: JSON.stringify(payload)
         });
@@ -1411,33 +1480,60 @@
         });
     }
 
-    const ALL_COLS = [
+const ALL_COLS = [
         { id: 'mnv', name: 'MÃ NV', lock: true }, { id: 'name', name: 'Họ Và Tên', lock: true }, { id: 'gender', name: 'Giới tính' }, { id: 'phone', name: 'SĐT' }, { id: 'cccd', name: 'CCCD' },
         { id: 'email', name: 'Email công ty' }, { id: 'dv', name: 'Đơn vị' }, { id: 'bp1', name: 'Bộ phận cấp 1' }, { id: 'bp2', name: 'Bộ phận cấp 2' }, { id: 'bp3', name: 'Bộ phận cấp 3' },
         { id: 'bp4', name: 'Bộ phận cấp 4' }, { id: 'bp5', name: 'Bộ phận cấp 5' }, { id: 'bp_goc', name: 'BP chấm công gốc' }, { id: 'company', name: 'Tên công ty' }, { id: 'title', name: 'Chức danh' },
-        { id: 'joinDate', name: 'Ngày gia nhập' }, { id: 'leaveStatus', name: 'Tình trạng' }, { id: 'leaveDate', name: 'Ngày nghỉ' }, { id: 'role', name: 'Phân quyền', admin: true }, { id: 'password', name: 'Mật khẩu', admin: true }
+        { id: 'joinDate', name: 'Ngày gia nhập' }, { id: 'leaveStatus', name: 'Tình trạng' }, { id: 'leaveDate', name: 'Ngày nghỉ' }, { id: 'role', name: 'Phân quyền', admin: true }, { id: 'password', name: 'Mật khẩu', admin: true },
+        { id: 'date', name: 'Ngày ăn' }, { id: 'time_reg', name: 'Thời điểm đăng ký' }, { id: 'time_hc', name: 'Thời điểm ghi dữ liệu' }
     ];
     const DEFAULT_COLS = { dash: ['mnv', 'name', 'gender', 'bp_goc', 'bp1', 'bp2', 'title'], ro: ['mnv', 'name', 'joinDate', 'bp_goc', 'bp1', 'bp2', 'title'], adj: ['mnv', 'name', 'bp_goc', 'bp1', 'bp2', 'title'], rep: ['mnv', 'name', 'bp_goc', 'bp1', 'bp2', 'title'], emp: ['mnv', 'name', 'gender', 'joinDate', 'bp_goc', 'bp1', 'bp2', 'title', 'role', 'password', 'leaveStatus'] };
     let userCols = { dash: [], ro: [], adj: [], rep: [], emp: [] }; let activeColTab = ''; let colModalObj = null;
 
-    function initColConfig() {
+function initColConfig() {
         let stored = localStorage.getItem('bmms_colconfig_' + currentUser.mnv);
         try {
             if(stored) { 
                 userCols = JSON.parse(stored);
-                if(!userCols.dash) userCols.dash = ALL_COLS.filter(c => DEFAULT_COLS.dash.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.dash.includes(c.id)).map(c => ({...c, visible: false})));
-                if(!userCols.emp) userCols.emp = ALL_COLS.filter(c => DEFAULT_COLS.emp.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.emp.includes(c.id)).map(c => ({...c, visible: false})));
-                if(!userCols.ro) userCols.ro = ALL_COLS.filter(c => DEFAULT_COLS.ro.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.ro.includes(c.id)).map(c => ({...c, visible: false})));
-                if(!userCols.adj) userCols.adj = ALL_COLS.filter(c => DEFAULT_COLS.adj.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.adj.includes(c.id)).map(c => ({...c, visible: false})));
-                if(!userCols.rep) userCols.rep = ALL_COLS.filter(c => DEFAULT_COLS.rep.includes(c.id)).map(c => ({...c, visible: true})).concat(ALL_COLS.filter(c => !DEFAULT_COLS.rep.includes(c.id)).map(c => ({...c, visible: false})));
                 
-                if(userCols.emp && !userCols.emp.find(c => c.id === 'password')) { userCols.emp.push({ id: 'password', name: 'Mật khẩu', admin: true, visible: true }); } 
+                // --- TỰ ĐỘNG CẬP NHẬT: Thêm các cột mới nếu cache cũ của user bị thiếu ---
+                ['dash', 'ro', 'adj', 'rep', 'emp'].forEach(tab => {
+                    if (!userCols[tab]) userCols[tab] = [];
+                    
+                    ALL_COLS.forEach(cDef => {
+                        // Kiểm tra xem cột trong ALL_COLS đã tồn tại trong cache của Tab này chưa
+                        let exists = userCols[tab].find(c => c.id === cDef.id);
+                        if (!exists) {
+                            // Nếu thiếu, tự động chèn thêm vào cuối danh sách cột của user dưới dạng ẩn (visible: false)
+                            // Riêng tab 'rep' (Báo cáo) hoặc 'adj' (Hiệu chỉnh) có thể bật true tùy bạn, ở đây mặc định để false để user tự tích chọn
+                            userCols[tab].push({
+                                id: cDef.id,
+                                name: cDef.name,
+                                lock: cDef.lock || false,
+                                admin: cDef.admin || false,
+                                visible: false // Mặc định ẩn để người dùng vào nút "Cột" tích chọn bật lên
+                            });
+                        }
+                    });
+                });
+                
+                // Bảo toàn logic kiểm tra cột password của Admin cũ
+                if(userCols.emp && !userCols.emp.find(c => c.id === 'password')) { 
+                    userCols.emp.push({ id: 'password', name: 'Mật khẩu', admin: true, visible: true }); 
+                } 
             } else { 
-                ['dash','ro','adj','rep','emp'].forEach(t => { userCols[t] = ALL_COLS.filter(c => DEFAULT_COLS[t].includes(c.id)).map(c => ({...c, visible: true})); ALL_COLS.filter(c => !DEFAULT_COLS[t].includes(c.id)).forEach(c => userCols[t].push({...c, visible: false})); }); 
+                // Nếu chưa có cache (như bên ẩn danh)
+                ['dash','ro','adj','rep','emp'].forEach(t => { 
+                    userCols[t] = ALL_COLS.filter(c => DEFAULT_COLS[t].includes(c.id)).map(c => ({...c, visible: true})); 
+                    ALL_COLS.filter(c => !DEFAULT_COLS[t].includes(c.id)).forEach(c => userCols[t].push({...c, visible: false})); 
+                }); 
             }
         } catch(e) {
             console.error("Lỗi dữ liệu cấu hình cột cũ, tự động đặt lại mặc định", e);
-            ['dash','ro','adj','rep','emp'].forEach(t => { userCols[t] = ALL_COLS.filter(c => DEFAULT_COLS[t].includes(c.id)).map(c => ({...c, visible: true})); ALL_COLS.filter(c => !DEFAULT_COLS[t].includes(c.id)).forEach(c => userCols[t].push({...c, visible: false})); }); 
+            ['dash','ro','adj','rep','emp'].forEach(t => { 
+                userCols[t] = ALL_COLS.filter(c => DEFAULT_COLS[t].includes(c.id)).map(c => ({...c, visible: true})); 
+                ALL_COLS.filter(c => !DEFAULT_COLS[t].includes(c.id)).forEach(c => userCols[t].push({...c, visible: false})); 
+            }); 
         }
     }
     
@@ -1473,31 +1569,35 @@
         return h;
     }
     
-    function buildTbodyCols(tab, eObj, isEdit) {
+function buildTbodyCols(tab, empData, isCheck = false) {
         let h = '';
-        if(!userCols[tab]) return h;
-        userCols[tab].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')).forEach(c => {
-            let v = eObj[c.id] || '';
-            if(isEdit && !['mnv'].includes(c.id)) {
-                if(c.id === 'name' || c.id === 'phone' || c.id === 'cccd' || c.id === 'email') h += `<td><input type="text" class="inline-input" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', '${c.id}')"></td>`;
-                else if(c.id === 'gender') h += `<td><input type="text" class="inline-input" list="list-gender" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', 'gender')"></td>`;
-                else if(c.id === 'bp_goc') h += `<td><input type="text" class="inline-input" list="list-bpgoc" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', 'bp_goc')"></td>`;
-                else if(['dv','bp1','bp2','bp3','bp4','bp5'].includes(c.id)) h += `<td><input type="text" class="inline-input" list="list-dept" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', '${c.id}')"></td>`;
-                else if(c.id === 'company') h += `<td><input type="text" class="inline-input" list="list-company" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', 'company')"></td>`;
-                else if(c.id === 'title') h += `<td><input type="text" class="inline-input" list="list-title" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', 'title')"></td>`;
-                else if(c.id === 'leaveStatus') h += `<td><select class="form-select form-select-sm inline-input border-0" data-old="${v}" onchange="doInlineSave(this, '${eObj.mnv}', 'leaveStatus')"><option value="Đang làm việc" ${v==='Đang làm việc'?'selected':''}>Đang làm việc</option><option value="Đã nghỉ" ${v==='Đã nghỉ'?'selected':''}>Đã nghỉ</option></select></td>`;
-                else if(c.id === 'leaveDate') h += `<td><input type="text" class="inline-input flatpickr-date" value="${v}" data-old="${v}" onblur="doInlineSave(this, '${eObj.mnv}', 'leaveDate')" placeholder="dd/mm/yyyy"></td>`;
-                else if(c.id === 'role') h += `<td><select class="form-select form-select-sm inline-input border-0 text-primary fw-bold" data-old="${v}" onchange="doInlineSave(this, '${eObj.mnv}', 'role')"><option value="" ${!v?'selected':''}>Trống</option><option value="Nhan_Vien" ${v==='Nhan_Vien'?'selected':''}>Nhan_Vien</option><option value="Admin_BP" ${v==='Admin_BP'?'selected':''}>Admin_BP</option><option value="Hành chính bộ phận" ${v==='Hành chính bộ phận'?'selected':''}>Hành chính bộ phận</option><option value="Bep_An" ${v==='Bep_An'?'selected':''}>Bep_An</option><option value="Admin_full" ${v==='Admin_full'?'selected':''}>Admin_full</option><option value="DELETE" class="text-danger fw-bold">Thu hồi (Xóa)</option></select></td>`;
-                else if(c.id === 'password') h += `<td class="text-danger fw-bold">${v || '-'}</td>`;
-                else h += `<td class="text-secondary">${v}</td>`;
-            } else {
-                if(c.id === 'name') h += `<td class="text-start fw-bold text-primary">${v}</td>`; else if(c.id === 'mnv') h += `<td class="fw-bold">${v}</td>`; else if(c.id === 'leaveStatus') h += `<td><span class="badge ${v==='Đang làm việc'?'bg-success':'bg-danger'}">${v}</span></td>`; else if(c.id === 'role') h += `<td><span class="badge bg-info text-dark">${v||'Trống'}</span></td>`; else if(c.id === 'password') h += `<td class="text-danger fw-bold">${v || '-'}</td>`; else h += `<td class="${c.id==='joinDate'?'text-secondary':''}">${v}</td>`;
-            }
-        }); return h;
+        if(userCols[tab]) {
+            userCols[tab].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')).forEach(c => {
+                let v = empData[c.id] || '';
+                // Xử lý riêng cho cột Mật khẩu
+                if (c.id === 'password' && currentUser.role === 'Admin_full') {
+                    h += `<td>
+                        <div class="input-group input-group-sm m-0 p-0" style="min-width:120px;">
+                            <input type="password" class="form-control form-control-sm border-secondary pw-input" value="${v}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePw(this)"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                    </td>`;
+                } else {
+                    let textClass = '';
+                    if(c.id === 'name' || c.id === 'leaveStatus') textClass = 'fw-bold text-primary';
+                    if(c.id === 'mnv') textClass = 'fw-bold';
+                    if(c.id === 'leaveDate') textClass = 'text-danger fw-bold';
+                    if(c.id === 'time_hc' || c.id === 'time_reg') textClass = 'text-muted small';
+                    if(c.id === 'date') textClass = 'fw-bold text-success';
+                    h += `<td class="text-start ${textClass}">${v}</td>`;
+                }
+            });
+        }
+        return h;
     }
 
-    function updateSelectColor(sel) {
-        sel.classList.remove('val-0', 'val-X', 'val-Y');
+function updateSelectColor(sel) {
+        sel.classList.remove('val-0', 'val-X', 'val-Y', 'val-');
         sel.classList.add('val-' + sel.value);
     }
 
@@ -1676,7 +1776,7 @@
         
         let canManage = f_ro || f_un || f_da || f_em || f_se || f_rep || f_adj;
         
-        let menuHTML = '';
+let menuHTML = '';
         if(canManage) {
             menuHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle menu-link active" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-utensils"></i> Đăng ký</a><ul class="dropdown-menu shadow-sm">
                         <li class="dropdown-submenu dropend"><a class="dropdown-item dropdown-toggle fw-bold text-secondary active" href="#" onclick="toggleSubMenu(event)"><i class="fa-solid fa-user"></i> Cá nhân</a><ul class="dropdown-menu shadow-sm">
@@ -1686,11 +1786,34 @@
             if(f_un) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchRegTab('reg-unregistered', this); return false;"><i class="fa-solid fa-user-xmark"></i> Chưa đăng ký</a></li>`;
             menuHTML += `</ul></li>`;
             
-            if (f_da || f_em || f_se || f_rep || f_adj || currentUser.role === 'Admin_full') {
-                menuHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle menu-link" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-briefcase"></i> Quản lý</a><ul class="dropdown-menu shadow-sm">`;
-                if(f_rep) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('reports', this); return false;"><i class="fa-solid fa-file-excel"></i> Báo cáo</a></li>`;
-                if(f_da) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('dashboard', this); return false;"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>`;
+            // MENU BÁO CÁO ĐỘC LẬP
+            if(f_rep || f_adj) {
+                menuHTML += `<li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle menu-link" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-chart-line"></i> Báo cáo</a>
+                    <ul class="dropdown-menu shadow-sm">`;
                 if(f_adj) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('adjust', this); return false;"><i class="fa-solid fa-pen-ruler"></i> Hiệu chỉnh</a></li>`;
+                if(f_rep) {
+                    menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('ADJ', 'DAY_SUMMARY', this); return false;"><i class="fa-solid fa-calendar-day text-danger"></i> Số check</a></li>
+                        <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('REAL', 'DAY_SUMMARY', this); return false;"><i class="fa-solid fa-calendar-day text-success"></i> Thực tế (Theo ngày)</a></li>
+                        <li class="dropdown-submenu dropend">
+                            <a class="dropdown-item dropdown-toggle fw-bold text-secondary" href="#" onclick="toggleSubMenu(event)"><i class="fa-solid fa-utensils"></i> Suất ăn theo (Ma trận)</a>
+                            <ul class="dropdown-menu shadow-sm">
+                                <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'MATRIX_BF', this); return false;">Ăn Sáng</a></li>
+                                <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'MATRIX_LU', this); return false;">Ăn Trưa</a></li>
+                                <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'MATRIX_DI', this); return false;">Ăn Chiều (Tối)</a></li>
+                                <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'MATRIX_OT', this); return false;">Tăng Ca</a></li>
+                            </ul>
+                        </li>
+                        <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'EMP_SUMMARY', this); return false;"><i class="fa-solid fa-table-list"></i> Tổng hợp</a></li>
+                        <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchReportTab('KEEP', 'FLAT_LIST', this); return false;"><i class="fa-solid fa-list"></i> Danh sách chi tiết</a></li>`;
+                }
+                menuHTML += `</ul></li>`;
+            }
+
+            // MENU QUẢN LÝ
+            if (f_da || f_em || f_se || currentUser.role === 'Admin_full') {
+                menuHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle menu-link" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-briefcase"></i> Quản lý</a><ul class="dropdown-menu shadow-sm">`;
+                if(f_da) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('dashboard', this); return false;"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>`;
                 if(f_em) menuHTML += `<li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchView('employees', this); return false;"><i class="fa-solid fa-users-gear"></i> Nhân sự</a></li>`;
                 if(f_se || currentUser.role === 'Admin_full') {
                     menuHTML += `<li><a class="dropdown-item fw-bold text-secondary admin-full-only" href="#" onclick="switchView('settings', this); return false;"><i class="fa-solid fa-cogs"></i> Thiết lập</a></li>`;
@@ -1700,18 +1823,12 @@
                 }
                 menuHTML += `</ul></li>`;
             }
+
             setTimeout(()=> { 
-                if(currentUser.role === 'Admin_full') {
-                    document.querySelectorAll('.admin-full-only').forEach(el => el.classList.remove('d-none')); 
-                } else {
-                    document.querySelectorAll('.admin-full-only').forEach(el => el.classList.add('d-none')); 
-                }
-                
-                if(canEditEmp) {
-                    document.querySelectorAll('.req-edit-role').forEach(el => el.classList.remove('d-none')); 
-                } else {
-                    document.querySelectorAll('.req-edit-role').forEach(el => el.classList.add('d-none')); 
-                }
+                if(currentUser.role === 'Admin_full') { document.querySelectorAll('.admin-full-only').forEach(el => el.classList.remove('d-none')); } 
+                else { document.querySelectorAll('.admin-full-only').forEach(el => el.classList.add('d-none')); }
+                if(canEditEmp) { document.querySelectorAll('.req-edit-role').forEach(el => el.classList.remove('d-none')); } 
+                else { document.querySelectorAll('.req-edit-role').forEach(el => el.classList.add('d-none')); }
             }, 10);
         } else { 
             menuHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle menu-link active" href="#" data-bs-toggle="dropdown" onclick="return false;"><i class="fa-solid fa-utensils"></i> Đăng ký</a><ul class="dropdown-menu shadow-sm">
@@ -1719,7 +1836,7 @@
                         <li><a class="dropdown-item fw-bold text-secondary active" href="#" onclick="switchRegTab('reg-personal', this, 'mode-vcal'); return false;">Theo lịch</a></li>
                         <li><a class="dropdown-item fw-bold text-secondary" href="#" onclick="switchRegTab('reg-personal', this, 'mode-cycle'); return false;">Dạng lưới</a></li></ul></li></ul></li>`; 
         }
-        nav.innerHTML = menuHTML; 
+        nav.innerHTML = menuHTML;
         
         let table = document.getElementById('emp-table'); if (canEditEmp) { table.classList.replace('mode-user', 'mode-view'); }
         
@@ -2125,7 +2242,7 @@
         }, intervalSec * 1000); 
     }
 
-    function startCountdown() { 
+function startCountdown() { 
         setInterval(() => { 
             let now = new Date(); let confMainList = appSettings.mealLocks || {};
             let nextMainLock = null, nextMainTarget = null;
@@ -2146,12 +2263,22 @@
             let dOtFmt = nextOtTarget ? `${String(nextOtTarget.getDate()).padStart(2,'0')}.${String(nextOtTarget.getMonth()+1).padStart(2,'0')}` : "--.--";
             let diffMain = nextMainLock ? (nextMainLock - now) : -1; let diffOt = nextOtLock ? (nextOtLock - now) : -1;
             let fmt = (diff) => { if(diff < 0) return "00:00:00"; let h = Math.floor(diff/(1000*60*60)), m = Math.floor((diff%(1000*60*60))/(1000*60)), s = Math.floor((diff%(1000*60))/1000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; };
+            
             let headerCount = document.getElementById('header-countdown');
-            if(headerCount) headerCount.innerHTML = `<div class="d-flex flex-row flex-nowrap gap-3 justify-content-end align-items-center" style="font-size: 0.85em;"><div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-success">Cơm: ${fmt(diffMain)} (${dMainFmt})</span></div><div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-danger">OT: ${fmt(diffOt)} (${dOtFmt})</span></div></div>`;
+            if(headerCount) {
+                // CHUẨN HÓA QUYỀN: Bỏ qua viết hoa/thường, xóa dấu cách thừa
+                let isStaff = currentUser && !['admin_full', 'admin_bp'].includes(String(currentUser.role).trim().toLowerCase());
+                
+                // NẾU LÀ NHÂN VIÊN -> ẨN HOÀN TOÀN ĐẾM NGƯỢC OT
+                let otHtml = !isStaff 
+                    ? `<div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-danger">OT: ${fmt(diffOt)} (${dOtFmt})</span></div>` 
+                    : ''; 
+
+                headerCount.innerHTML = `<div class="d-flex flex-row flex-nowrap gap-3 justify-content-end align-items-center" style="font-size: 0.85em;"><div class="fw-bold text-nowrap"><i class="fa-solid fa-lock text-muted"></i> <span class="text-success">Cơm: ${fmt(diffMain)} (${dMainFmt})</span></div>${otHtml}</div>`;
+            }
             if (now.getSeconds() === 0) checkNotifications();
         }, 1000); 
     }
-
     async function reloadDashboardData() { 
         let d = await fetchAPI({ action: 'get_dashboard', user: currentUser });
         if(d.success) { dashboardData = d.data; if(d.hcData) hcData = d.hcData; } 
@@ -2207,9 +2334,9 @@
     function getCheckedTreeVals(containerId) { return Array.from(document.getElementById(containerId).querySelectorAll('.tree-cb:checked')).map(cb => cb.value); }
     function getCycleDates(offset) { let d = new Date(); d.setMonth(d.getMonth() + offset); let day = d.getDate(), month = d.getMonth(), year = d.getFullYear(); let sMonth = day >= 24 ? month : month - 1; return { start: new Date(year, sMonth, 24), end: new Date(year, sMonth + 1, 23) }; }
     
-    function getLockStatus(loopTime, empLeaveDateStr) { 
+function getLockStatus(loopTime, empLeaveDateStr) { 
         let res = { bf: false, lu: false, di: false, ot: false, all: false, reason: '' };
-        if (currentUser && currentUser.role === 'Admin_full') return res;
+        if (currentUser && String(currentUser.role).trim().toLowerCase() === 'admin_full') return res;
         
         let now = new Date(); let targetDate = new Date(loopTime); let isSun = targetDate.getDay() === 0;
         let confMain = appSettings.mealLocks ? (isSun && appSettings.mealLocks.sunMain ? appSettings.mealLocks.sunMain : appSettings.mealLocks.main) : { d:1, h:16 }; if(!confMain) confMain = { d:1, h:16 };
@@ -2221,7 +2348,10 @@
         let lockTimeOt = new Date(targetDate); lockTimeOt.setDate(lockTimeOt.getDate() + 1 - confOt.d); lockTimeOt.setHours(confOt.h, 0, 0, 0);
         
         if (now >= lockTimeOt) { res.ot = true; if(!res.reason) res.reason = 'Quá giờ khóa suất tăng ca'; else res.reason += ' & Quá giờ khóa OT'; }
-        if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) { res.ot = true; }
+        
+        // LUÔN KHÓA NẾU LÀ NHÂN VIÊN
+        let isStaff = currentUser && !['admin_full', 'admin_bp'].includes(String(currentUser.role).trim().toLowerCase());
+        if (isStaff) { res.ot = true; }
         
         let dStr = targetDate.toLocaleDateString('en-CA'); let hol = holidaysData.find(h => h.date === dStr);
         if (hol) { 
@@ -2240,8 +2370,18 @@
         return res; 
     }
 
-    function enforceOtSelectPermission() { if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) document.querySelectorAll('.ot-select').forEach(el => { el.disabled = true; el.classList.add('bg-light'); }); }
-
+function enforceOtSelectPermission() { 
+        let isStaff = currentUser && !['admin_full', 'admin_bp'].includes(String(currentUser.role).trim().toLowerCase());
+        if (isStaff) {
+            document.querySelectorAll('.ot-select, #vc-ot, #sd-ot').forEach(el => { 
+                el.disabled = true; 
+                el.value = '0';
+                el.style.backgroundColor = '#e9ecef'; // Ép màu xám chuẩn
+                el.style.cursor = 'not-allowed';
+                el.style.opacity = '1'; // Chống lỗi browser làm mờ
+            }); 
+        } 
+    }
     function updateLocalDashboardData(mnv, dateStr, bf, lu, di, ot, note) {
         let ex = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dateStr);
         if (ex) { ex.breakfast = bf; ex.lunch = lu; ex.dinner = di; ex.ot = ot; if (note !== undefined) ex.note = note; }
@@ -2254,28 +2394,36 @@
         else { let eObj = employeeData.find(e => String(e.mnv) === String(mnv)) || {name:'', dept_cap2:''}; hcData.push({ mnv: mnv, name: eObj.name, dept: eObj.dept_cap2, date: dateStr, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note || '' }); }
     }
 
-    function cacheRow(el, mnv, dateStr, isAdjust = false) {
+function cacheRow(el, mnv, dateStr, isAdjust = false) {
         let tr = el.closest('tr');
         if(!tr) return;
-        let bf = tr.querySelector('.ms-bf')?.value || '0';
-        let lu = tr.querySelector('.ms-lu')?.value || '0';
-        let di = tr.querySelector('.ms-di')?.value || '0';
-        let ot = tr.querySelector('.ms-ot')?.value || '0';
+        
+        // TÍNH NĂNG MỚI: Tự động tô màu dòng khi có thao tác chỉnh sửa
+        if (isAdjust) {
+            tr.classList.add('table-warning');
+        }
+
+        let dVal = isAdjust ? '' : '0'; 
+        let bfEl = tr.querySelector('.ms-bf'); let bf = bfEl ? bfEl.value : dVal;
+        let luEl = tr.querySelector('.ms-lu'); let lu = luEl ? luEl.value : dVal;
+        let diEl = tr.querySelector('.ms-di'); let di = diEl ? diEl.value : dVal;
+        let otEl = tr.querySelector('.ms-ot'); let ot = otEl ? otEl.value : dVal;
         let note = tr.querySelector('.meal-note')?.value || '';
         let targetCache = isAdjust ? tempAdjustCache : tempMealCache;
         targetCache[`${mnv}_${dateStr}`] = { mnv: mnv, name: tr.getAttribute('data-name') || '', date: dateStr, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note };
     }
-    
-    function clearMealRow(btn, mnv, dDisplay, isAdjust = false) {
+function clearMealRow(btn, mnv, dDisplay, isAdjust = false) {
         let tr = btn.closest('tr'); let selects = tr.querySelectorAll('select');
+        let dVal = isAdjust ? '' : '0'; // Hiệu chỉnh thì xóa về Trống
         selects.forEach(s => { 
-            if (!s.disabled && s.value !== '0') {
-                s.value = '0';
+            if (!s.disabled && s.value !== dVal) {
+                s.value = dVal;
                 updateSelectColor(s);
             } 
         });
         let note = tr.querySelector('.meal-note'); if (note && !note.disabled && note.value !== '') note.value = '';
         cacheRow(btn, mnv, dDisplay, isAdjust);
+		if (isAdjust) recalcAdjustDiff();
     }
 
     // DASHBOARD (Tab)
@@ -2689,67 +2837,387 @@
         if(dpModal) dpModal.hide();
     }
 
-    function renderReports() {
-        let dStrInput = document.getElementById('rep-date').value; if(!dStrInput) return;
-        let dStart, dEnd; if(dStrInput.includes(' to ')) { let parts = dStrInput.split(' to '); let p1 = parts[0].split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); let p2 = parts[1].split('/'); dEnd = new Date(p2[2], p2[1]-1, p2[0]); dEnd.setHours(23,59,59); } else { let p1 = dStrInput.split('/'); dStart = new Date(p1[2], p1[1]-1, p1[0]); dStart.setHours(0,0,0); dEnd = new Date(dStart); dEnd.setHours(23,59,59); }
-        let sText = removeAccents(document.getElementById('rep-search').value); let sDepts = getCheckedTreeVals('rep-dept-tree'); let sStatuses = getCheckedStatuses('rep'); let sBpGoc = getCheckedBpGoc('rep');
-        let tbody = document.getElementById('rep-table-body'); let html = []; let sumSangBt = 0, sumSangHy = 0, sumTruaBt = 0, sumTruaHy = 0, sumToiBt = 0, sumToiHy = 0, sumOtBt = 0, sumOtHy = 0;
-        let dataType = document.getElementById('rep-data-type').value;
+// --- KHAI BÁO BIẾN CHO TAB BÁO CÁO ---
 
-        document.getElementById('rep-thead').innerHTML = buildTheadHTML('rep');
+
+    function switchReportTab(type, meal, element) {
+        currentReportConfig.type = type;
+        currentReportConfig.meal = meal;
         
-        let mergedData = {};
-        dashboardData.forEach(row => {
-            let rd = parseToDateObj(row.date);
-            if (rd >= dStart && rd <= dEnd) { mergedData[`${row.mnv}_${row.date}`] = { ...row }; }
+        let typeSelect = document.getElementById('rep-data-type');
+        if (typeSelect) typeSelect.value = type;
+
+        switchView('reports', element);
+        
+        if (meal === 'CHART') {
+            document.getElementById('rep-table-container').classList.add('d-none');
+            document.getElementById('rep-chart-container').classList.remove('d-none');
+        } else {
+            document.getElementById('rep-table-container').classList.remove('d-none');
+            document.getElementById('rep-chart-container').classList.add('d-none');
+        }
+        renderReports();
+    }
+
+    function buildRepThead(meal) {
+        let h = `<th style="width:50px;">STT</th><th style="width:90px;">Ngày</th>`;
+        if(userCols['rep']) {
+            userCols['rep'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')).forEach(c => h += `<th>${c.name}</th>`);
+        }
+        if (meal === 'ALL' || meal === 'SUMMARY' || meal === 'CHART') {
+            h += `<th style="min-width: 60px;">Sáng</th><th style="min-width: 60px;">Trưa</th><th style="min-width: 60px;">Chiều</th><th class="ot-col" style="min-width: 70px;">Tăng ca</th>`;
+        } else if (meal === 'BF') { h += `<th style="min-width: 60px;">Sáng</th>`; } 
+        else if (meal === 'LU') { h += `<th style="min-width: 60px;">Trưa</th>`; } 
+        else if (meal === 'DI') { h += `<th style="min-width: 60px;">Chiều</th>`; } 
+        else if (meal === 'OT') { h += `<th class="ot-col" style="min-width: 70px;">Tăng ca</th>`; }
+        h += `<th class="text-start" style="min-width: 150px;">Ghi chú</th>`;
+        return h;
+    }
+
+    function renderRepChart(filteredArray) {
+        let dateMap = {};
+        filteredArray.forEach(item => {
+            let d = item.row.date;
+            if(!dateMap[d]) dateMap[d] = { bf:0, lu:0, di:0, ot:0 };
+            if(item.row.breakfast === 'X' || item.row.breakfast === 'Y') dateMap[d].bf++;
+            if(item.row.lunch === 'X' || item.row.lunch === 'Y') dateMap[d].lu++;
+            if(item.row.dinner === 'X' || item.row.dinner === 'Y') dateMap[d].di++;
+            if(item.row.ot === 'X' || item.row.ot === 'Y') dateMap[d].ot++;
         });
-        
-        if (dataType === 'ADJ') {
-            hcData.forEach(row => {
-                let rd = parseToDateObj(row.date);
-                if (rd >= dStart && rd <= dEnd) {
-                    if(!mergedData[`${row.mnv}_${row.date}`]) { mergedData[`${row.mnv}_${row.date}`] = { ...row }; } 
-                    else {
-                        mergedData[`${row.mnv}_${row.date}`].breakfast = row.breakfast; mergedData[`${row.mnv}_${row.date}`].lunch = row.lunch;
-                        mergedData[`${row.mnv}_${row.date}`].dinner = row.dinner; mergedData[`${row.mnv}_${row.date}`].ot = row.ot; mergedData[`${row.mnv}_${row.date}`].note = row.note;
-                    }
+
+        let sortedDates = Object.keys(dateMap).sort((a,b) => {
+            let pa = a.split('/'); let pb = b.split('/');
+            return new Date(pa[2], pa[1]-1, pa[0]) - new Date(pb[2], pb[1]-1, pb[0]);
+        });
+
+        let dataBf = sortedDates.map(d => dateMap[d].bf);
+        let dataLu = sortedDates.map(d => dateMap[d].lu);
+        let dataDi = sortedDates.map(d => dateMap[d].di);
+        let dataOt = sortedDates.map(d => dateMap[d].ot);
+
+        let canvas = document.getElementById('repDayChart');
+        let ctx = canvas.getContext('2d');
+        if(window.repChartInstance) window.repChartInstance.destroy();
+
+        window.repChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedDates,
+                datasets: [
+                    { label: 'Ăn Sáng', data: dataBf, backgroundColor: '#0d6efd', barPercentage: 0.6 },
+                    { label: 'Ăn Trưa', data: dataLu, backgroundColor: '#198754', barPercentage: 0.6 },
+                    { label: 'Ăn Chiều', data: dataDi, backgroundColor: '#6f42c1', barPercentage: 0.6 },
+                    { label: 'Tăng ca', data: dataOt, backgroundColor: '#dc3545', barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'BIỂU ĐỒ TỔNG SUẤT ĂN THEO NGÀY', font: { size: 16 } }
                 }
+            }
+        });
+    }
+
+// --- BIẾN TOÀN CỤC CHO TAB BÁO CÁO ---
+    let currentReportConfig = { source: 'REAL', layout: 'DAY_SUMMARY' };
+
+    function switchReportTab(source, layout, element) {
+        if (source !== 'KEEP') {
+            currentReportConfig.source = source;
+            let elDataType = document.getElementById('rep-data-type');
+            if (elDataType) elDataType.value = source;
+        }
+        currentReportConfig.layout = layout;
+        switchView('reports', element);
+    }
+
+function buildRepThead(layout, datesToExport) {
+        if (layout === 'DAY_SUMMARY') {
+            return `
+            <tr class="rep-day-header">
+                <th rowspan="2" class="align-middle border-end" style="width:100px;">NGÀY</th>
+                <th colspan="3" class="border-double-right">BẢNG CHẤM CƠM BÃI TRƯỜNG</th>
+                <th colspan="4">BẢNG CHẤM CƠM HYATT</th>
+            </tr>
+            <tr class="rep-day-sub">
+                <th>SÁNG</th><th>TRƯA</th><th class="border-double-right">CHIỀU</th>
+                <th>SÁNG</th><th>TRƯA</th><th>CHIỀU</th><th class="ot-col">TĂNG CA</th>
+            </tr>`;
+        }
+        if (layout && layout.startsWith('MATRIX_')) {
+            let h = `<tr><th style="width:50px;">STT</th><th style="width:100px;">Mã NV</th><th class="text-start">Họ Tên</th><th>BP chấm công</th><th>BP Cấp 2</th>`;
+            datesToExport.forEach(dStr => { let p = dStr.split('/'); h += `<th>${p[0]}/${p[1]}</th>`; });
+            h += `<th>Tổng</th></tr>`;
+            return h;
+        }
+        if (layout === 'EMP_SUMMARY') {
+            return `<tr><th style="width:50px;">STT</th><th style="width:100px;">Mã NV</th><th class="text-start">Họ Tên</th><th>BP chấm công</th><th>BP Cấp 2</th><th>Tổng Sáng</th><th>Tổng Trưa</th><th>Tổng Chiều</th><th class="ot-col">Tổng Tăng ca</th><th class="text-start">Ghi chú</th></tr>`;
+        }
+        
+        let h = `<tr><th style="width:50px;">STT</th><th style="width:90px;">Ngày</th>`;
+        if(userCols['rep']) { userCols['rep'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')).forEach(c => h += `<th>${c.name}</th>`); }
+        h += `<th style="min-width: 60px;">Sáng</th><th style="min-width: 60px;">Trưa</th><th style="min-width: 60px;">Chiều</th><th class="ot-col" style="min-width: 70px;">Tăng ca</th><th class="text-start" style="min-width: 150px;">Ghi chú</th></tr>`;
+        return h;
+    }
+
+    function renderReports() {
+        let layout = currentReportConfig.layout || 'DAY_SUMMARY';
+        let elDataType = document.getElementById('rep-data-type');
+        let source = elDataType ? elDataType.value : 'REAL';
+
+        let cardContainer = document.querySelector('#view-reports .row.text-center.mb-3.g-3');
+        let tableRep = document.getElementById('table-rep');
+        if (layout === 'DAY_SUMMARY') {
+            if(cardContainer) cardContainer.classList.add('d-none');
+            if(tableRep) tableRep.classList.add('table-bordered');
+        } else {
+            if(cardContainer) cardContainer.classList.remove('d-none');
+            if(tableRep) tableRep.classList.remove('table-bordered');
+        }
+
+        let dStrInput = document.getElementById('rep-date').value; 
+        if(!dStrInput) return;
+        
+        let datesToExport = getDatesInRange(dStrInput);
+        if (!datesToExport || datesToExport.length === 0) return;
+
+        let dStart = parseToDateObj(datesToExport[0]);
+        let dEnd = parseToDateObj(datesToExport[datesToExport.length - 1]);
+        dEnd.setHours(23, 59, 59);
+
+        let sText = removeAccents(document.getElementById('rep-search').value);
+        let sDepts = getCheckedTreeVals('rep-dept-tree');
+        let sStatuses = getCheckedStatuses('rep');
+        let sBpGoc = getCheckedBpGoc('rep');
+        
+        document.getElementById('rep-thead').innerHTML = buildRepThead(layout, datesToExport);
+        
+        let realMap = {}, adjMap = {};
+        dashboardData.forEach(r => { let d = parseToDateObj(r.date); if(d >= dStart && d <= dEnd) realMap[`${r.mnv}_${r.date}`] = r; });
+        hcData.forEach(r => { let d = parseToDateObj(r.date); if(d >= dStart && d <= dEnd) adjMap[`${r.mnv}_${r.date}`] = r; });
+
+        let isAdjMode = (source === 'ADJ');
+
+        let filteredEmps = employeeData.filter(e => {
+            let status = e.leaveStatus || 'Đang làm việc';
+            if (!sStatuses.includes(status)) return false;
+            let deptMatch = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
+            let textMatch = (!sText) || removeAccents(e.mnv).includes(sText) || removeAccents(e.name).includes(sText);
+            let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
+            return deptMatch && textMatch && bpGocMatch;
+        });
+
+        let activeEmps = filteredEmps.filter(e => {
+            let hasMeal = false;
+            datesToExport.forEach(dStr => {
+                let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                let mAdj = adjMap[`${e.mnv}_${dStr}`];
+let getV = (a, r) => (a && a !== '') ? a : (r || '0');
+let fData = isAdjMode ? { breakfast: getV(mAdj?.breakfast, mReal.breakfast), lunch: getV(mAdj?.lunch, mReal.lunch), dinner: getV(mAdj?.dinner, mReal.dinner), ot: getV(mAdj?.ot, mReal.ot), note: (mAdj && mAdj.note !== undefined && mAdj.note !== '') ? mAdj.note : (mReal.note || '') } : mReal;
+                if (layout && layout.startsWith('MATRIX_')) {
+                    let fieldKey = 'breakfast';
+                    if(layout === 'MATRIX_LU') fieldKey = 'lunch'; else if(layout === 'MATRIX_DI') fieldKey = 'dinner'; else if(layout === 'MATRIX_OT') fieldKey = 'ot';
+                    if (fData[fieldKey] && fData[fieldKey] !== '0') hasMeal = true;
+                } else {
+                    if ((fData.breakfast && fData.breakfast !== '0') || (fData.lunch && fData.lunch !== '0') || (fData.dinner && fData.dinner !== '0') || (fData.ot && fData.ot !== '0')) { hasMeal = true; }
+                }
+            });
+            return hasMeal;
+        });
+
+        let tbody = document.getElementById('rep-table-body');
+        let html = [];
+        let tSangBt = 0, tSangHy = 0, tTruaBt = 0, tTruaHy = 0, tToiBt = 0, tToiHy = 0, tOtBt = 0, tOtHy = 0;
+
+        activeEmps.forEach(e => {
+            datesToExport.forEach(dStr => {
+                let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                let fData = isAdjMode ? { breakfast: mAdj ? mAdj.breakfast : mReal.breakfast, lunch: mAdj ? mAdj.lunch : mReal.lunch, dinner: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot } : mReal;
+                if(fData.breakfast === 'X') tSangBt++; else if (fData.breakfast === 'Y') tSangHy++;
+                if(fData.lunch === 'X') tTruaBt++; else if (fData.lunch === 'Y') tTruaHy++;
+                if(fData.dinner === 'X') tToiBt++;  else if (fData.dinner === 'Y') tToiHy++;
+                if(fData.ot === 'X') tOtBt++;   else if (fData.ot === 'Y') tOtHy++;
+            });
+        });
+
+if (layout === 'DAY_SUMMARY') {
+            let elPagination = document.getElementById('pagination-rep');
+            if(elPagination) elPagination.innerHTML = '';
+            
+            let prices = appSettings.mealPrices || {bf: 0, lu: 0, di: 0, ot: 0};
+            let formatMoney = (val) => val === 0 ? '-' : val.toLocaleString('vi-VN') + 'đ';
+
+// 1. TÍNH TOÁN DỮ LIỆU TỔNG VÀ THEO NGÀY/KHU VỰC
+            let summaryByDate = {};
+            let grandTotal = { bf: 0, lu: 0, di: 0, ot: 0, money: 0 };
+
+            datesToExport.forEach(dStr => {
+                summaryByDate[dStr] = {
+                    'Bãi Trường': { bf: 0, lu: 0, di: 0, ot: 0, money: 0 },
+                    'Hyatt': { bf: 0, lu: 0, di: 0, ot: 0, money: 0 }
+                };
+
+                activeEmps.forEach(e => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' };
+                    let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                    let fData = isAdjMode ? { breakfast: mAdj ? mAdj.breakfast : mReal.breakfast, lunch: mAdj ? mAdj.lunch : mReal.lunch, dinner: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot } : mReal;
+
+                    // KIỂM TRA CHÍNH XÁC: X -> Bãi Trường | Y -> Hyatt
+                    // Buổi Sáng
+                    if (fData.breakfast === 'X') { summaryByDate[dStr]['Bãi Trường'].bf++; grandTotal.bf++; summaryByDate[dStr]['Bãi Trường'].money += prices.bf; grandTotal.money += prices.bf; }
+                    else if (fData.breakfast === 'Y') { summaryByDate[dStr]['Hyatt'].bf++; grandTotal.bf++; summaryByDate[dStr]['Hyatt'].money += prices.bf; grandTotal.money += prices.bf; }
+
+                    // Buổi Trưa
+                    if (fData.lunch === 'X') { summaryByDate[dStr]['Bãi Trường'].lu++; grandTotal.lu++; summaryByDate[dStr]['Bãi Trường'].money += prices.lu; grandTotal.money += prices.lu; }
+                    else if (fData.lunch === 'Y') { summaryByDate[dStr]['Hyatt'].lu++; grandTotal.lu++; summaryByDate[dStr]['Hyatt'].money += prices.lu; grandTotal.money += prices.lu; }
+
+                    // Buổi Chiều
+                    if (fData.dinner === 'X') { summaryByDate[dStr]['Bãi Trường'].di++; grandTotal.di++; summaryByDate[dStr]['Bãi Trường'].money += prices.di; grandTotal.money += prices.di; }
+                    else if (fData.dinner === 'Y') { summaryByDate[dStr]['Hyatt'].di++; grandTotal.di++; summaryByDate[dStr]['Hyatt'].money += prices.di; grandTotal.money += prices.di; }
+
+                    // Tăng ca
+                    if (fData.ot === 'X') { summaryByDate[dStr]['Bãi Trường'].ot++; grandTotal.ot++; summaryByDate[dStr]['Bãi Trường'].money += prices.ot; grandTotal.money += prices.ot; }
+                    else if (fData.ot === 'Y') { summaryByDate[dStr]['Hyatt'].ot++; grandTotal.ot++; summaryByDate[dStr]['Hyatt'].money += prices.ot; grandTotal.money += prices.ot; }
+                });
+            });
+
+            // 2. GHI ĐÈ GIAO DIỆN TIÊU ĐỀ (HEADER) ĐỂ CHÈN TỔNG SỐ & TIỀN
+            document.getElementById('rep-thead').innerHTML = `
+                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th class="text-center align-middle border-end" style="width: 10%; font-size: 1.1em; color: #555;">NGÀY ĂN</th>
+                    <th class="text-start align-middle border-end" style="width: 15%; font-size: 1.1em; color: #555;"><i class="fa-solid fa-map-location-dot"></i> KHU VỰC</th>
+                    <th class="text-center align-middle" style="width: 15%;">
+                        <div class="fw-bold mb-1 fs-6 text-primary">SÁNG</div>
+                        <small class="badge bg-white text-dark border w-100 shadow-sm py-1" style="font-size:0.85em;">${grandTotal.bf} suất | <b class="text-danger">${formatMoney(grandTotal.bf * prices.bf)}</b></small>
+                    </th>
+                    <th class="text-center align-middle" style="width: 15%;">
+                        <div class="fw-bold mb-1 fs-6 text-success">TRƯA</div>
+                        <small class="badge bg-white text-dark border w-100 shadow-sm py-1" style="font-size:0.85em;">${grandTotal.lu} suất | <b class="text-danger">${formatMoney(grandTotal.lu * prices.lu)}</b></small>
+                    </th>
+                    <th class="text-center align-middle" style="width: 15%;">
+                        <div class="fw-bold mb-1 fs-6" style="color: #6f42c1;">CHIỀU</div>
+                        <small class="badge bg-white text-dark border w-100 shadow-sm py-1" style="font-size:0.85em;">${grandTotal.di} suất | <b class="text-danger">${formatMoney(grandTotal.di * prices.di)}</b></small>
+                    </th>
+                    <th class="text-center align-middle ot-col" style="width: 15%;">
+                        <div class="fw-bold mb-1 fs-6 text-danger">TĂNG CA</div>
+                        <small class="badge bg-white text-dark border w-100 shadow-sm py-1" style="font-size:0.85em;">${grandTotal.ot} suất | <b class="text-danger">${formatMoney(grandTotal.ot * prices.ot)}</b></small>
+                    </th>
+                    <th class="text-center align-middle text-danger fs-6 border-start" style="width: 15%;">THÀNH TIỀN</th>
+                </tr>
+            `;
+
+            // 3. RENDER DỮ LIỆU TỪNG NGÀY (CHIA BÃI TRƯỜNG & HYATT)
+            datesToExport.forEach(dStr => {
+                let ds = dStr.substring(0, 5); // Cắt lấy chuỗi dd/mm
+                let dDataBT = summaryByDate[dStr]['Bãi Trường'];
+                let dDataHY = summaryByDate[dStr]['Hyatt'];
+
+                html.push(`
+                <tr>
+                    <td rowspan="2" class="align-middle fw-bold text-success border-end text-center" style="font-size: 1.1em; background-color: #fff;">${ds}</td>
+                    <td class="text-start fw-bold text-success border-end" style="background-color: #fff;"><i class="fa-solid fa-location-dot me-1"></i> Bãi Trường</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataBT.bf || '-'}</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataBT.lu || '-'}</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataBT.di || '-'}</td>
+                    <td class="text-center fw-bold text-secondary ot-col" style="background-color: #fff;">${dDataBT.ot || '-'}</td>
+                    <td class="text-center fw-bold text-danger border-start" style="background-color: #fff;">${formatMoney(dDataBT.money)}</td>
+                </tr>
+                <tr style="border-bottom: 3px solid #dee2e6;">
+                    <td class="text-start fw-bold text-info border-end" style="background-color: #fff;"><i class="fa-solid fa-location-dot me-1"></i> Hyatt</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataHY.bf || '-'}</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataHY.lu || '-'}</td>
+                    <td class="text-center fw-bold text-secondary" style="background-color: #fff;">${dDataHY.di || '-'}</td>
+                    <td class="text-center fw-bold text-secondary ot-col" style="background-color: #fff;">${dDataHY.ot || '-'}</td>
+                    <td class="text-center fw-bold text-danger border-start" style="background-color: #fff;">${formatMoney(dDataHY.money)}</td>
+                </tr>`);
+            });
+
+            // 4. THÊM DÒNG TỔNG CỘNG CHỐT KỲ
+            html.push(`
+                <tr style="background-color: #fff3cd; border-top: 3px solid #ffc107;">
+                    <td colspan="2" class="text-end fw-bold text-danger fs-6 align-middle border-end">TỔNG CỘNG KỲ NÀY:</td>
+                    <td class="text-center fw-bold text-danger fs-5 align-middle">${grandTotal.bf}</td>
+                    <td class="text-center fw-bold text-danger fs-5 align-middle">${grandTotal.lu}</td>
+                    <td class="text-center fw-bold text-danger fs-5 align-middle">${grandTotal.di}</td>
+                    <td class="text-center fw-bold text-danger fs-5 align-middle ot-col">${grandTotal.ot}</td>
+                    <td class="text-center fw-bold text-danger fs-5 align-middle border-start">${formatMoney(grandTotal.money)}</td>
+                </tr>
+            `);
+        } else if (layout && layout.startsWith('MATRIX_')) {
+            let fieldKey = 'breakfast';
+            if(layout === 'MATRIX_LU') fieldKey = 'lunch'; else if(layout === 'MATRIX_DI') fieldKey = 'dinner'; else if(layout === 'MATRIX_OT') fieldKey = 'ot';
+            renderPagination('rep', activeEmps.length, renderReports);
+            let limit = pageState.rep.limit === 'ALL' ? activeEmps.length : pageState.rep.limit; let page = pageState.rep.page;
+            let pagedData = activeEmps.slice((page - 1) * limit, page * limit); let cIdx = (page - 1) * limit + 1;
+            pagedData.forEach(e => {
+                let rowHtml = `<tr><td>${cIdx++}</td><td class="fw-bold">${e.mnv}</td><td class="text-start fw-bold text-primary">${e.name}</td><td>${e.bp_goc || ''}</td><td>${e.dept_cap2 || ''}</td>`;
+                let rowSum = 0;
+                datesToExport.forEach(dStr => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0' }; let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                    let fData = isAdjMode ? { breakfast: mAdj ? mAdj.breakfast : mReal.breakfast, lunch: mAdj ? mAdj.lunch : mReal.lunch, dinner: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot } : mReal;
+                    let val = fData[fieldKey] || '0'; let isEaten = (val === 'X' || val === 'Y') ? 1 : ''; if(isEaten) rowSum++; rowHtml += `<td class="fw-bold text-success">${isEaten}</td>`;
+                });
+                rowHtml += `<td class="fw-bold text-danger fs-6">${rowSum}</td></tr>`; html.push(rowHtml);
+            });
+        } else if (layout === 'EMP_SUMMARY') {
+            renderPagination('rep', activeEmps.length, renderReports);
+            let limit = pageState.rep.limit === 'ALL' ? activeEmps.length : pageState.rep.limit; let page = pageState.rep.page;
+            let pagedData = activeEmps.slice((page - 1) * limit, page * limit); let cIdx = (page - 1) * limit + 1;
+            pagedData.forEach(e => {
+                let sumS = 0, sumTr = 0, sumTo = 0, sumOt = 0, notes = [];
+                datesToExport.forEach(dStr => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0', note: '' }; let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                    let fData = isAdjMode ? { breakfast: mAdj ? mAdj.breakfast : mReal.breakfast, lunch: mAdj ? mAdj.lunch : mReal.lunch, dinner: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot, note: mAdj ? mAdj.note : mReal.note } : mReal;
+                    if(fData.breakfast === 'X' || fData.breakfast === 'Y') sumS++; if(fData.lunch === 'X' || fData.lunch === 'Y') sumTr++; if(fData.dinner === 'X' || fData.dinner === 'Y') sumTo++; if(fData.ot === 'X' || fData.ot === 'Y') sumOt++;
+                    if(fData.note && fData.note.trim() !== '') notes.push(fData.note.trim());
+                });
+                html.push(`<tr><td>${cIdx++}</td><td class="fw-bold">${e.mnv}</td><td class="text-start fw-bold text-primary">${e.name}</td><td>${e.bp_goc || ''}</td><td>${e.dept_cap2 || ''}</td><td class="fw-bold text-primary fs-6">${sumS}</td><td class="fw-bold text-success fs-6">${sumTr}</td><td class="fw-bold fs-6" style="color: #6f42c1;">${sumTo}</td><td class="fw-bold text-danger fs-6 ot-col">${sumOt}</td><td class="text-start text-muted">${[...new Set(notes)].join(', ')}</td></tr>`);
+            });
+        } else if (layout === 'FLAT_LIST') {
+            let flatData = [];
+            activeEmps.forEach(e => {
+                datesToExport.forEach(dStr => {
+                    let mReal = realMap[`${e.mnv}_${dStr}`] || { breakfast: '0', lunch: '0', dinner: '0', ot: '0', note: '' }; let mAdj = adjMap[`${e.mnv}_${dStr}`];
+                    let fData = isAdjMode ? { breakfast: mAdj ? mAdj.breakfast : mReal.breakfast, lunch: mAdj ? mAdj.lunch : mReal.lunch, dinner: mAdj ? mAdj.dinner : mReal.dinner, ot: mAdj ? mAdj.ot : mReal.ot, note: mAdj ? mAdj.note : mReal.note } : mReal;
+                    if(fData.breakfast !== '0' || fData.lunch !== '0' || fData.dinner !== '0' || fData.ot !== '0') { flatData.push({ emp: e, date: dStr, meal: fData }); }
+                });
+            });
+            renderPagination('rep', flatData.length, renderReports);
+            let limit = pageState.rep.limit === 'ALL' ? flatData.length : pageState.rep.limit; let page = pageState.rep.page;
+            let pagedData = flatData.slice((page - 1) * limit, page * limit); let startIdx = (page - 1) * limit + 1;
+pagedData.forEach(item => {
+                let eMerged = { ...item.emp, time_reg: item.meal.time_reg || '', time_hc: item.meal.time_hc || '' };
+                html.push(`<tr><td>${startIdx++}</td><td class="fw-bold">${item.date}</td>${buildTbodyCols('rep', eMerged, false)}<td>${getStyledMealName(item.meal.breakfast)}</td><td>${getStyledMealName(item.meal.lunch)}</td><td>${getStyledMealName(item.meal.dinner)}</td><td class="ot-col">${getStyledMealName(item.meal.ot)}</td><td class="text-start">${item.meal.note || ''}</td></tr>`);
             });
         }
 
-        let filteredArray = [];
-        Object.values(mergedData).forEach(row => {
-            let empObj = employeeData.find(e => String(e.mnv) === String(row.mnv)) || {}; let status = empObj.leaveStatus || 'Đang làm việc';
-            if (!sStatuses.includes(status)) return;
+        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="35" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
+        enforceOtSelectPermission();
 
-            let deptMatch = (sDepts.length === 0) || sDepts.includes(empObj.dv) || sDepts.includes(empObj.bp1) || sDepts.includes(empObj.dept_cap2) || sDepts.includes(empObj.bp3) || sDepts.includes(empObj.bp4) || sDepts.includes(empObj.bp5);
-            let textMatch = (!sText) || removeAccents(row.mnv).includes(sText) || removeAccents(row.name).includes(sText);
-            let bpGocMatch = (sBpGoc.length === 0) || sBpGoc.includes(empObj.bp_goc);
-            
-            if (deptMatch && textMatch && bpGocMatch) {
-                let hasMeal = false;
-                if(row.breakfast === 'X') { sumSangBt++; hasMeal = true; } else if (row.breakfast === 'Y') { sumSangHy++; hasMeal = true; }
-                if(row.lunch === 'X') { sumTruaBt++; hasMeal = true; } else if (row.lunch === 'Y') { sumTruaHy++; hasMeal = true; }
-                if(row.dinner === 'X') { sumToiBt++; hasMeal = true; } else if (row.dinner === 'Y') { sumToiHy++; hasMeal = true; }
-                if(row.ot === 'X') { sumOtBt++; hasMeal = true; } else if (row.ot === 'Y') { sumOtHy++; hasMeal = true; }
-                if (hasMeal) { filteredArray.push({row: row, empObj: empObj}); }
-            }
-        });
-
-        renderPagination('rep', filteredArray.length, renderReports);
-        let limit = pageState.rep.limit === 'ALL' ? filteredArray.length : pageState.rep.limit;
-        let page = pageState.rep.page;
-        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
-        let startIdx = (page - 1) * limit + 1;
-
-        pagedData.forEach(item => {
-            html.push(`<tr><td>${startIdx++}</td><td class="fw-bold">${item.row.date}</td>${buildTbodyCols('rep', item.empObj, false)}<td>${getStyledMealName(item.row.breakfast)}</td><td>${getStyledMealName(item.row.lunch)}</td><td>${getStyledMealName(item.row.dinner)}</td><td class="ot-col">${getStyledMealName(item.row.ot)}</td><td class="text-start">${item.row.note || ''}</td></tr>`);
-        });
-
-        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['rep']||[]).length + 7}" class="text-center text-muted">Không có dữ liệu phù hợp</td></tr>`;
-        document.getElementById('rep-sang').innerText = sumSangBt + sumSangHy; document.getElementById('rep-sang-bt').innerText = sumSangBt; document.getElementById('rep-sang-hy').innerText = sumSangHy; document.getElementById('rep-trua').innerText = sumTruaBt + sumTruaHy; document.getElementById('rep-trua-bt').innerText = sumTruaBt; document.getElementById('rep-trua-hy').innerText = sumTruaHy; document.getElementById('rep-toi').innerText = sumToiBt + sumToiHy; document.getElementById('rep-toi-bt').innerText = sumToiBt; document.getElementById('rep-toi-hy').innerText = sumToiHy; document.getElementById('rep-ot').innerText = sumOtBt + sumOtHy; document.getElementById('rep-ot-bt').innerText = sumOtBt; document.getElementById('rep-ot-hy').innerText = sumOtHy;
+        let dSang = document.getElementById('rep-sang'); if(dSang) dSang.innerText = tSangBt + tSangHy; 
+        let dSangBt = document.getElementById('rep-sang-bt'); if(dSangBt) dSangBt.innerText = tSangBt; 
+        let dSangHy = document.getElementById('rep-sang-hy'); if(dSangHy) dSangHy.innerText = tSangHy;
+        
+        let dTrua = document.getElementById('rep-trua'); if(dTrua) dTrua.innerText = tTruaBt + tTruaHy; 
+        let dTruaBt = document.getElementById('rep-trua-bt'); if(dTruaBt) dTruaBt.innerText = tTruaBt; 
+        let dTruaHy = document.getElementById('rep-trua-hy'); if(dTruaHy) dTruaHy.innerText = tTruaHy;
+        
+        let dToi = document.getElementById('rep-toi'); if(dToi) dToi.innerText = tToiBt + tToiHy; 
+        let dToiBt = document.getElementById('rep-toi-bt'); if(dToiBt) dToiBt.innerText = tToiBt; 
+        let dToiHy = document.getElementById('rep-toi-hy'); if(dToiHy) dToiHy.innerText = tToiHy;
+        
+        let dOt = document.getElementById('rep-ot'); if(dOt) dOt.innerText = tOtBt + tOtHy; 
+        let dOtBt = document.getElementById('rep-ot-bt'); if(dOtBt) dOtBt.innerText = tOtBt; 
+        let dOtHy = document.getElementById('rep-ot-hy'); if(dOtHy) dOtHy.innerText = tOtHy;
     }
-    
     function parseToDateObj(dStr) { let p = dStr.split('/'); return new Date(p[2], parseInt(p[1])-1, p[0], 12, 0, 0); }
 
     async function downloadExcelTemplate(mode = 'ro') {
@@ -3623,7 +4091,8 @@ function submitCopyDate() {
                 ? `<textarea class="form-control form-control-sm border-0 meal-note" rows="1" disabled style="resize: none; overflow: hidden;" title="${locks.reason}">${escapedNote}</textarea>` 
                 : `<textarea class="form-control form-control-sm meal-note border-secondary" rows="1" style="resize: vertical; transition: all 0.2s;" onfocus="this.rows=3" onblur="this.rows=1; cacheRow(this, '${mnv}', '${dDisplay}', false)">${escapedNote}</textarea>`;
             
-            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('ro', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', false)" title="Xóa chọn dòng này" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
+let eMerged = { ...e, time_reg: cache ? cache.time_reg : (myMeal ? myMeal.time_reg || '' : ''), time_hc: '' };
+            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('ro', eMerged, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', false)" title="Xóa chọn dòng này" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
         });
         tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['ro']||[]).length + 6}" class="text-center text-muted">Không tìm thấy NV</td></tr>`; enforceOtSelectPermission();
     }
@@ -3652,84 +4121,505 @@ function submitCopyDate() {
             showToast("Chưa có thay đổi nào để lưu!", "danger");
         }
     }
+// 1. HÀM TÍNH TOÁN NGẦM TỔNG SỐ 
+    function calculateAdjustSums() {
+        let dStrInput = document.getElementById('adj-date').value;
+        if(!dStrInput) return { sumReal: {bf:0,lu:0,di:0,ot:0}, sumAdj: {bf:0,lu:0,di:0,ot:0}, activeRows: [] };
 
-    // ADJUST (HIỆU CHỈNH)
-    function renderAdjustGrid() {
-        let dStrInput = document.getElementById('adj-date').value; if(!dStrInput) return;
-        let dStr = dStrInput.split(' to ')[0], parts = dStr.split('/'), d = new Date(parts[2], parseInt(parts[1])-1, parts[0]);
-        let tbody = document.getElementById('adj-grid-body'), html = [], sText = removeAccents(document.getElementById('adj-search').value), dDisplay = toDDMMYYYY(d), sDepts = getCheckedTreeVals('adj-dept-tree'), sStatuses = getCheckedStatuses('adj'), sBpGoc = getCheckedBpGoc('adj'); 
-        document.getElementById('adj-thead').innerHTML = buildTheadHTML('adj');
-        
-        let getOpts = (val) => `<option value="0" ${val==='0'||!val?'selected':''}>O</option><option value="X" ${val==='X'?'selected':''}>X</option><option value="Y" ${val==='Y'?'selected':''}>Y</option>`;
-        let buildSel = (cls, val, disabled, mnv, dDisplay, title) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? `disabled title="${title}"` : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', true)">${getOpts(val)}</select>`;
+        let datesToSave = getDatesInRange(dStrInput);
+        let sText = removeAccents(document.getElementById('adj-search').value);
+        let sDepts = getCheckedTreeVals('adj-dept-tree');
+        let sStatuses = getCheckedStatuses('adj');
+        let sBpGoc = getCheckedBpGoc('adj');
 
-        let filteredArray = employeeData.filter(e => {
-            let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText); 
+        let sumReal = { bf: 0, lu: 0, di: 0, ot: 0 };
+        let sumAdj = { bf: 0, lu: 0, di: 0, ot: 0 };
+        let activeRows = []; // Chứa danh sách từng DÒNG (NV + Ngày)
+
+        employeeData.forEach(e => {
+            let matchText = (!sText) || removeAccents(e.name).includes(sText) || removeAccents(e.mnv).includes(sText);
             let matchDept = (sDepts.length === 0) || sDepts.includes(e.dv) || sDepts.includes(e.bp1) || sDepts.includes(e.dept_cap2) || sDepts.includes(e.bp3) || sDepts.includes(e.bp4) || sDepts.includes(e.bp5);
             let matchBpGoc = (sBpGoc.length === 0) || sBpGoc.includes(e.bp_goc);
-            return matchText && matchDept && matchBpGoc && sStatuses.includes(e.leaveStatus);
+            
+            if (!matchText || !matchDept || !matchBpGoc || !sStatuses.includes(e.leaveStatus)) return;
+
+            for (let i = 0; i < datesToSave.length; i++) {
+                let dS = datesToSave[i];
+                let mnv = e.mnv;
+                let realMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dS);
+                let adjMeal = hcData.find(m => String(m.mnv) === String(mnv) && m.date === dS);
+                let cache = tempAdjustCache[`${mnv}_${dS}`];
+
+                if (realMeal || adjMeal || cache) {
+                    let rBf = realMeal ? realMeal.breakfast || '0' : '0';
+                    let rLu = realMeal ? realMeal.lunch || '0' : '0';
+                    let rDi = realMeal ? realMeal.dinner || '0' : '0';
+                    let rOt = realMeal ? realMeal.ot || '0' : '0';
+
+                    let bfVal = cache && cache.breakfast !== undefined ? cache.breakfast : (adjMeal ? adjMeal.breakfast : '');
+                    let luVal = cache && cache.lunch !== undefined ? cache.lunch : (adjMeal ? adjMeal.lunch : '');
+                    let diVal = cache && cache.dinner !== undefined ? cache.dinner : (adjMeal ? adjMeal.dinner : '');
+                    let otVal = cache && cache.ot !== undefined ? cache.ot : (adjMeal ? adjMeal.ot : '');
+
+                    if(rBf === 'X' || rBf === 'Y') sumReal.bf++;
+                    if(rLu === 'X' || rLu === 'Y') sumReal.lu++;
+                    if(rDi === 'X' || rDi === 'Y') sumReal.di++;
+                    if(rOt === 'X' || rOt === 'Y') sumReal.ot++;
+
+                    let finBf = bfVal === '' ? rBf : bfVal;
+                    let finLu = luVal === '' ? rLu : luVal;
+                    let finDi = diVal === '' ? rDi : diVal;
+                    let finOt = otVal === '' ? rOt : otVal;
+
+                    if(finBf === 'X' || finBf === 'Y') sumAdj.bf++;
+                    if(finLu === 'X' || finLu === 'Y') sumAdj.lu++;
+                    if(finDi === 'X' || finDi === 'Y') sumAdj.di++;
+                    if(finOt === 'X' || finOt === 'Y') sumAdj.ot++;
+                    
+                    // Thêm dòng độc lập (1 Nhân viên - 1 Ngày)
+                    activeRows.push({ 
+                        emp: e, dateStr: dS, 
+                        realMeal: realMeal, adjMeal: adjMeal, cache: cache,
+                        rBf: rBf, rLu: rLu, rDi: rDi, rOt: rOt,
+                        bfVal: bfVal, luVal: luVal, diVal: diVal, otVal: otVal,
+                        noteVal: cache ? (cache.note || '') : (adjMeal ? (adjMeal.note || '') : '')
+                    });
+                }
+            }
         });
 
-        renderPagination('adj', filteredArray.length, renderAdjustGrid);
-        let limit = pageState.adj.limit === 'ALL' ? filteredArray.length : pageState.adj.limit;
+        return { sumReal, sumAdj, activeRows };
+    }
+
+    // 2. HÀM CẬP NHẬT GIAO DIỆN HEADER (REAL-TIME)
+    function recalcAdjustDiff() {
+        let { sumReal, sumAdj } = calculateAdjustSums();
+        let getDiffHtml = (adj, real) => {
+            let diff = adj - real;
+            let badge = diff > 0 ? `<span class="badge bg-danger rounded-pill ms-1 px-1">+${diff}</span>` : (diff < 0 ? `<span class="badge bg-primary rounded-pill ms-1 px-1">${diff}</span>` : `<span class="badge bg-light text-muted border border-secondary rounded-pill ms-1 px-1">0</span>`);
+            return `<div class="mt-1" style="font-size: 0.85em; font-weight: normal; letter-spacing: 0;">TT: <b class="text-secondary">${real}</b> | HC: <b class="text-primary">${adj}</b> ${badge}</div>`;
+        };
+        let thBf = document.getElementById('th-adj-diff-bf'); if(thBf) thBf.innerHTML = `Sáng ${getDiffHtml(sumAdj.bf, sumReal.bf)}`;
+        let thLu = document.getElementById('th-adj-diff-lu'); if(thLu) thLu.innerHTML = `Trưa ${getDiffHtml(sumAdj.lu, sumReal.lu)}`;
+        let thDi = document.getElementById('th-adj-diff-di'); if(thDi) thDi.innerHTML = `Chiều ${getDiffHtml(sumAdj.di, sumReal.di)}`;
+        let thOt = document.getElementById('th-adj-diff-ot'); if(thOt) thOt.innerHTML = `Tăng ca ${getDiffHtml(sumAdj.ot, sumReal.ot)}`;
+    }
+
+function renderAdjustGrid() {
+        let { sumReal, sumAdj, activeRows } = calculateAdjustSums();
+        let tbody = document.getElementById('adj-grid-body');
+        let html = [];
+
+        let getOpts = (val) => `<option value="" ${val===''||val===undefined?'selected':''}>-</option><option value="0" ${val==='0'?'selected':''}>O</option><option value="X" ${val==='X'?'selected':''}>X</option><option value="Y" ${val==='Y'?'selected':''}>Y</option>`;
+        let buildSel = (cls, val, disabled, mnv, dDisplay, title) => `<select class="form-select form-select-sm meal-select val-${val} ${cls}" ${disabled ? `disabled title="${title}"` : ''} onchange="updateSelectColor(this); cacheRow(this, '${mnv}', '${dDisplay}', true); recalcAdjustDiff();">${getOpts(val)}</select>`;
+
+        renderPagination('adj', activeRows.length, renderAdjustGrid);
+        let limit = pageState.adj.limit === 'ALL' ? activeRows.length : pageState.adj.limit;
         let page = pageState.adj.page;
-        let pagedData = filteredArray.slice((page - 1) * limit, page * limit);
+        let pagedData = activeRows.slice((page - 1) * limit, page * limit);
         let c = (page - 1) * limit + 1;
 
-        pagedData.forEach(e => {
+        pagedData.forEach(row => {
+            let e = row.emp;
             let mnv = e.mnv;
-            let realMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
-            let adjMeal = hcData.find(m => String(m.mnv) === String(mnv) && m.date === dDisplay);
-            let cache = tempAdjustCache[`${mnv}_${dDisplay}`];
-            
-            let bfVal = cache ? cache.breakfast : (adjMeal ? adjMeal.breakfast : (realMeal ? realMeal.breakfast || '0' : '0'));
-            let luVal = cache ? cache.lunch : (adjMeal ? adjMeal.lunch : (realMeal ? realMeal.lunch || '0' : '0'));
-            let diVal = cache ? cache.dinner : (adjMeal ? adjMeal.dinner : (realMeal ? realMeal.dinner || '0' : '0'));
-            let otVal = cache ? cache.ot : (adjMeal ? adjMeal.ot : (realMeal ? realMeal.ot || '0' : '0'));
-            let noteVal = cache ? cache.note : (adjMeal ? adjMeal.note : (realMeal ? realMeal.note || '' : ''));
-            
+            let dDisplay = row.dateStr;
+            let parts = dDisplay.split('/');
+            let d = new Date(parts[2], parseInt(parts[1])-1, parts[0]);
+
             let isResigned = e.leaveStatus === 'Đã nghỉ';
             let locks = getLockStatus(d.getTime(), e.leaveDate); 
             if (isResigned && currentUser.role !== 'Admin_full') { locks.bf = true; locks.lu = true; locks.di = true; locks.ot = true; locks.all = true; locks.reason = 'Nhân viên đã nghỉ việc'; }
             
-            let trClass = isResigned ? 'row-resigned' : (locks.all ? 'row-locked' : (adjMeal ? 'table-warning' : '')); 
+            // Giữ màu vàng nếu dòng đã được lưu trên Sheet hoặc đang được sửa dở dang trong Cache
+            let hasTempCache = tempAdjustCache[`${mnv}_${dDisplay}`] ? true : false;
+            let trClass = isResigned ? 'row-resigned' : (locks.all ? 'row-locked' : ((row.adjMeal || hasTempCache) ? 'table-warning' : '')); 
             
-            let selBf = buildSel('ms-bf border-danger', bfVal, locks.bf, mnv, dDisplay, locks.reason);
-            let selLu = buildSel('ms-lu border-danger', luVal, locks.lu, mnv, dDisplay, locks.reason);
-            let selDi = buildSel('ms-di border-danger', diVal, locks.di, mnv, dDisplay, locks.reason);
-            let selOT = buildSel('ms-ot border-danger ot-select', otVal, locks.ot, mnv, dDisplay, locks.reason);
-			let escapedNote = String(noteVal).replace(/"/g, '&quot;');
+            let buildDualUI = (realV, adjV, field, lockStt) => {
+                let textReal = realV === '0' ? 'O' : realV;
+                let bgReal = realV === '0' ? 'bg-white text-muted border-secondary' : (realV === 'X' ? 'bg-primary bg-opacity-10 text-primary border-primary' : 'bg-danger bg-opacity-10 text-danger border-danger');
+                let selHtml = buildSel(`ms-${field} border-danger`, adjV, lockStt, mnv, dDisplay, locks.reason);
+                return `<div class="dual-cell">
+                            <div><div class="border rounded fw-bold real-val ${bgReal}" title="Thực tế gốc">${textReal}</div></div>
+                            <div>${selHtml}</div>
+                        </div>`;
+            };
+
+            let tdBf = buildDualUI(row.rBf, row.bfVal, 'bf', locks.bf);
+            let tdLu = buildDualUI(row.rLu, row.luVal, 'lu', locks.lu);
+            let tdDi = buildDualUI(row.rDi, row.diVal, 'di', locks.di);
+            let tdOt = buildDualUI(row.rOt, row.otVal, 'ot', locks.ot);
+
+            let escapedNote = String(row.noteVal).replace(/"/g, '&quot;');
             let inpNote = locks.all
                 ? `<input type="text" class="form-control form-control-sm meal-note border-0 text-center" disabled value="${escapedNote}" title="${locks.reason}">`
-                : `<input type="text" class="form-control form-control-sm meal-note border-danger" value="${escapedNote}" onblur="cacheRow(this, '${mnv}', '${dDisplay}', true)">`;            
+                : `<input type="text" class="form-control form-control-sm meal-note border-danger" value="${escapedNote}" onkeyup="cacheRow(this, '${mnv}', '${dDisplay}', true)" onblur="cacheRow(this, '${mnv}', '${dDisplay}', true)">`;            
             
-            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}"><td ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('adj', e, false)}<td class="align-middle">${selBf}</td><td class="align-middle">${selLu}</td><td class="align-middle">${selDi}</td><td class="align-middle ot-col">${selOT}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', true)" title="Về 0" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            let eMerged = { ...e, date: dDisplay, time_reg: row.realMeal ? row.realMeal.time_reg || '' : '', time_hc: row.cache ? row.cache.time_hc : (row.adjMeal ? row.adjMeal.time_hc || '' : '') };
+            
+            // Đã gắn thêm data-date vào <tr> để hàm Save biết chính xác đây là ngày nào
+            html.push(`<tr class="${trClass}" data-mnv="${mnv}" data-name="${e.name}" data-date="${dDisplay}"><td class="text-center" ${locks.all ? `title="${locks.reason}"` : ''}>${c++}</td>${buildTbodyCols('adj', eMerged, false)}<td class="align-middle">${tdBf}</td><td class="align-middle">${tdLu}</td><td class="align-middle">${tdDi}</td><td class="align-middle ot-col">${tdOt}</td><td class="align-middle">${inpNote}</td><td class="text-center align-middle"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearMealRow(this, '${mnv}', '${dDisplay}', true)" title="Về Trống" ${locks.all ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button></td></tr>`);
         });
-        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['adj']||[]).length + 6}" class="text-center text-muted">Không tìm thấy NV</td></tr>`; enforceOtSelectPermission();
-    }
-    
-    function submitAdjustGrid() {
-        let dStrInput = document.getElementById('adj-date').value; if(!dStrInput) return showToast("Chọn ngày!", 'danger');
-        let datesToSave = getDatesInRange(dStrInput);
-        
-        if(datesToSave.length > 1) {
-            let rows = document.querySelectorAll('#adj-grid-body tr');
-            rows.forEach(tr => {
-                let mnv = tr.getAttribute('data-mnv');
-                let bfEl = tr.querySelector('.ms-bf'), luEl = tr.querySelector('.ms-lu'), diEl = tr.querySelector('.ms-di'), otEl = tr.querySelector('.ms-ot');
-                if(!bfEl && !luEl && !diEl && !otEl) return;
-                let bf = bfEl.value || '0', lu = luEl ? luEl.value : '0', di = diEl ? diEl.value : '0', ot = otEl ? otEl.value : '0', note = tr.querySelector('.meal-note') ? tr.querySelector('.meal-note').value : '';
-                datesToSave.forEach(dateVN => {
-                    tempAdjustCache[`${mnv}_${dateVN}`] = { mnv: mnv, name: tr.getAttribute('data-name'), date: dateVN, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note };
-                });
-            });
-        }
 
-        let mealArray = Object.values(tempAdjustCache);
+        let getDiffHtml = (adj, real) => {
+            let diff = adj - real;
+            let badge = diff > 0 ? `<span class="badge bg-danger rounded-pill ms-1 px-1">+${diff}</span>` : (diff < 0 ? `<span class="badge bg-primary rounded-pill ms-1 px-1">${diff}</span>` : `<span class="badge bg-light text-muted border border-secondary rounded-pill ms-1 px-1">0</span>`);
+            return `<div class="mt-1" style="font-size: 0.85em; font-weight: normal; letter-spacing: 0;">TT: <b class="text-secondary">${real}</b> | HC: <b class="text-primary">${adj}</b> ${badge}</div>`;
+        };
+
+        let thHtml = `<th class="text-center" style="width:50px;">STT</th>`;
+        if(userCols['adj']) { userCols['adj'].filter(c => c.visible && (!c.admin || currentUser.role === 'Admin_full')).forEach(c => thHtml += `<th class="text-center">${c.name}</th>`); }
+        
+        thHtml += `<th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="th-adj-diff-bf">Sáng ${getDiffHtml(sumAdj.bf, sumReal.bf)}</th>
+                   <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="th-adj-diff-lu">Trưa ${getDiffHtml(sumAdj.lu, sumReal.lu)}</th>
+                   <th class="text-center text-nowrap" style="min-width: 160px; width: 160px;" id="th-adj-diff-di">Chiều ${getDiffHtml(sumAdj.di, sumReal.di)}</th>
+                   <th class="text-center text-nowrap ot-col" style="min-width: 160px; width: 160px;" id="th-adj-diff-ot">Tăng ca ${getDiffHtml(sumAdj.ot, sumReal.ot)}</th>
+                   <th class="text-start" style="min-width: 150px;">Ghi chú</th><th class="text-center" style="width:50px;">Xóa</th>`;
+        
+        document.getElementById('adj-thead').innerHTML = `<tr>${thHtml}</tr>`;
+        tbody.innerHTML = html.length > 0 ? html.join('') : `<tr><td colspan="${(userCols['adj']||[]).length + 6}" class="text-center text-muted">Không tìm thấy dữ liệu</td></tr>`; 
+        enforceOtSelectPermission();
+    }
+async function exportAdjustExcel() {
+        if (typeof ExcelJS === 'undefined') { alert('Đang tải thư viện Excel, vui lòng chờ 2 giây!'); return; }
+        
+        let { sumReal, sumAdj, activeRows } = calculateAdjustSums();
+        if(activeRows.length === 0) return showToast('Không có dữ liệu để xuất!', 'warning');
+
+        showToast('Đang tạo file Excel...', 'info');
+
+        let wb = new ExcelJS.Workbook();
+        let ws = wb.addWorksheet('Hieu_Chinh');
+
+        ws.columns = [
+            { width: 5 }, { width: 12 }, { width: 25 }, { width: 15 }, { width: 12 }, 
+            { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, 
+            { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, { width: 6 }, { width: 30 }
+        ];
+
+        ws.mergeCells('A1:R1');
+        ws.getCell('A1').value = 'BẢNG THEO DÕI HIỆU CHỈNH SUẤT ĂN - BIM GROUP';
+        ws.getCell('A1').font = { bold: true, size: 16 };
+        ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+        ws.getRow(1).height = 40;
+
+        const groups = [
+            { r: 'F2:H2', label: 'SÁNG', bg: 'FFD9E1F2' }, { r: 'I2:K2', label: 'TRƯA', bg: 'FFFCE4D6' },
+            { r: 'L2:N2', label: 'CHIỀU', bg: 'FFE2EFDA' }, { r: 'O2:Q2', label: 'TĂNG CA', bg: 'FFFFF2CC' }
+        ];
+        groups.forEach(g => {
+            ws.mergeCells(g.r); let cell = ws.getCell(g.r.split(':')[0]);
+            cell.value = g.label; cell.font = { bold: true }; cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: g.bg } };
+        });
+
+        let headers = ['STT', 'MÃ NV', 'Họ và tên', 'Bộ phận', 'Ngày ăn', 'TT', 'HC', 'Lệch', 'TT', 'HC', 'Lệch', 'TT', 'HC', 'Lệch', 'TT', 'HC', 'Lệch', 'Ghi chú'];
+        let r4 = ws.addRow(headers); r4.font = { bold: true }; r4.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        ws.insertRow(3, []); ws.mergeCells('A3:E3'); ws.getCell('A3').value = 'TỔNG CỘNG REAL-TIME:';
+        ws.getCell('A3').font = { bold: true }; ws.getCell('A3').alignment = { horizontal: 'right', vertical: 'middle' };
+        ws.getRow(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFEFEF' } }; ws.getRow(3).font = { bold: true };
+
+        activeRows.forEach((r, idx) => {
+            let rowIdx = idx + 5; 
+            let getHC = (val) => (val === '' || val === undefined) ? '-' : val;
+            let getTT = (val) => (val === '0' || val === '' || val === undefined) ? '0' : val;
+
+            let row = ws.addRow([
+                idx + 1, r.emp.mnv, r.emp.name, r.emp.dept_cap2, r.dateStr,
+                getTT(r.rBf), getHC(r.bfVal), { formula: `IF(OR(G${rowIdx}="", G${rowIdx}="-"), 0, IF(OR(G${rowIdx}="X", G${rowIdx}="Y"), 1, 0) - IF(OR(F${rowIdx}="X", F${rowIdx}="Y"), 1, 0))` },
+                getTT(r.rLu), getHC(r.luVal), { formula: `IF(OR(J${rowIdx}="", J${rowIdx}="-"), 0, IF(OR(J${rowIdx}="X", J${rowIdx}="Y"), 1, 0) - IF(OR(I${rowIdx}="X", I${rowIdx}="Y"), 1, 0))` },
+                getTT(r.rDi), getHC(r.diVal), { formula: `IF(OR(M${rowIdx}="", M${rowIdx}="-"), 0, IF(OR(M${rowIdx}="X", M${rowIdx}="Y"), 1, 0) - IF(OR(L${rowIdx}="X", L${rowIdx}="Y"), 1, 0))` },
+                getTT(r.rOt), getHC(r.otVal), { formula: `IF(OR(P${rowIdx}="", P${rowIdx}="-"), 0, IF(OR(P${rowIdx}="X", P${rowIdx}="Y"), 1, 0) - IF(OR(O${rowIdx}="X", O${rowIdx}="Y"), 1, 0))` },
+                r.noteVal || ''
+            ]);
+            
+            row.eachCell((cell, colNum) => {
+                if (colNum >= 6 && colNum <= 17) cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                // Định dạng dấu cộng và nền màu xám nhạt cho cột LỆCH
+                if ([8, 11, 14, 17].includes(colNum)) {
+                    cell.numFmt = '+0;-0;0';
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }; 
+                }
+            });
+        });
+
+        let lastRow = activeRows.length + 4;
+
+        ['F', 'I', 'L', 'O'].forEach(col => { ws.getCell(`${col}3`).value = { formula: `COUNTIF(${col}5:${col}${lastRow}, "X") + COUNTIF(${col}5:${col}${lastRow}, "Y")` }; ws.getCell(`${col}3`).alignment = { horizontal: 'center' }; });
+        ['H', 'K', 'N', 'Q'].forEach(col => { ws.getCell(`${col}3`).value = { formula: `SUM(${col}5:${col}${lastRow})` }; ws.getCell(`${col}3`).alignment = { horizontal: 'center' }; });
+        ['G', 'J', 'M', 'P'].forEach((col, idx) => {
+            let cols = ['F', 'H', 'I', 'K', 'L', 'N', 'O', 'Q'];
+            ws.getCell(`${col}3`).value = { formula: `${cols[idx*2]}3+${cols[idx*2+1]}3` };
+            ws.getCell(`${col}3`).font = { color: { argb: 'FF0070C0' }, bold: true }; ws.getCell(`${col}3`).alignment = { horizontal: 'center' };
+        });
+
+        let cols = ['F', 'G', 'I', 'J', 'L', 'M', 'O', 'P'];
+        cols.forEach(col => { ws.dataValidations.add(`${col}5:${col}${lastRow}`, { type: 'list', allowBlank: true, formulae: ['"-,0,X,Y"'] }); });
+
+        let lechCols = ['H', 'K', 'N', 'Q'];
+        lechCols.forEach(col => {
+            ws.addConditionalFormatting({
+                ref: `${col}5:${col}${lastRow}`,
+                rules: [
+                    { type: 'cellIs', operator: 'greaterThan', formulae: ['0'], style: { font: { color: { argb: 'FFFF0000' }, bold: true } } },
+                    { type: 'cellIs', operator: 'lessThan', formulae: ['0'], style: { font: { color: { argb: 'FF0070C0' }, bold: true } } },
+                    { type: 'cellIs', operator: 'equal', formulae: ['0'], style: { font: { color: { argb: 'FFBFBFBF' } } } }
+                ]
+            });
+        });
+
+        // ----------------------------------------------------
+        // TÍNH NĂNG MỚI: BẢO VỆ SHEET (Khóa các cột không được sửa)
+        // ----------------------------------------------------
+        ws.eachRow((row, rowNumber) => {
+            if (rowNumber >= 5) {
+                row.eachCell((cell, colNum) => {
+                    // Chỉ cho phép sửa cột HC (7, 10, 13, 16) và Ghi chú (18)
+                    if ([7, 10, 13, 16, 18].includes(colNum)) {
+                        cell.protection = { locked: false };
+                    } else {
+                        cell.protection = { locked: true };
+                    }
+                });
+            } else {
+                row.eachCell(cell => { cell.protection = { locked: true }; }); // Khóa tiêu đề
+            }
+            if (rowNumber >= 2) row.eachCell(cell => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
+        });
+
+        ws.protect('bim123', { selectLockedCells: true, selectUnlockedCells: true }); // Mật khẩu giải khóa: bim123
+
+        const buffer = await wb.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `HieuChinh_Mau_${document.getElementById('adj-date').value.replace(/\//g, '-')}.xlsx`);
+    }
+// BIẾN TOÀN CỤC CHỨA DỮ LIỆU CHỜ NHẬP
+    let pendingAdjImport = [];	
+// HÀM 1: ĐỌC EXCEL VÀ HIỂN THỊ LÊN MODAL (LÀM NỔI BẬT HIỆU CHỈNH, TÔ XÁM THỰC TẾ)
+    async function importAdjustExcel(event) {
+        let file = event.target.files[0];
+        if (!file) return;
+
+        if (typeof ExcelJS === 'undefined') { alert('Lỗi thư viện ExcelJS!'); return; }
+
+        let reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                showToast("Đang đọc và đối chiếu dữ liệu file Excel...", "info");
+                let wb = new ExcelJS.Workbook();
+                await wb.xlsx.load(e.target.result);
+                let ws = wb.getWorksheet(1); 
+                
+                pendingAdjImport = []; 
+
+                ws.eachRow((row, rowNumber) => {
+                    if (rowNumber >= 5) { 
+                        let getVal = (col) => { let v = row.getCell(col).value; return v ? v.toString().trim() : ''; };
+                        
+                        let mnv = getVal(2);
+                        let dateStr = getVal(5);
+                        let name = getVal(3);
+                        
+                        let hcBf = getVal(7);
+                        let hcLu = getVal(10);
+                        let hcDi = getVal(13);
+                        let hcOt = getVal(16);
+                        let note = getVal(18);
+                        
+                        let parseVal = (v) => {
+                            let uv = v.toUpperCase();
+                            if (uv === '-' || uv === 'O') return (uv === 'O') ? '0' : '';
+                            return uv;
+                        };
+
+                        if (mnv && dateStr) {
+                            let parsedBf = parseVal(hcBf);
+                            let parsedLu = parseVal(hcLu);
+                            let parsedDi = parseVal(hcDi);
+                            let parsedOt = parseVal(hcOt);
+                            
+                            // ĐỐI CHIẾU VỚI GỐC
+                            let realMeal = dashboardData.find(m => String(m.mnv) === String(mnv) && m.date === dateStr);
+                            let rBf = realMeal ? realMeal.breakfast || '0' : '0';
+                            let rLu = realMeal ? realMeal.lunch || '0' : '0';
+                            let rDi = realMeal ? realMeal.dinner || '0' : '0';
+                            let rOt = realMeal ? realMeal.ot || '0' : '0';
+
+                            let existingAdj = hcData.find(m => String(m.mnv) === String(mnv) && m.date === dateStr);
+                            let exBf = existingAdj ? existingAdj.breakfast : '';
+                            let exLu = existingAdj ? existingAdj.lunch : '';
+                            let exDi = existingAdj ? existingAdj.dinner : '';
+                            let exOt = existingAdj ? existingAdj.ot : '';
+                            let exNote = existingAdj ? existingAdj.note : '';
+
+                            // NẾU CÓ THAY ĐỔI THÌ PUSH VÀO DANH SÁCH CHỜ
+                            if (parsedBf !== exBf || parsedLu !== exLu || parsedDi !== exDi || parsedOt !== exOt || note !== exNote) {
+                                pendingAdjImport.push({
+                                    mnv: mnv, name: name, date: dateStr,
+                                    breakfast: parsedBf, lunch: parsedLu, dinner: parsedDi, ot: parsedOt, note: note,
+                                    rBf: rBf, rLu: rLu, rDi: rDi, rOt: rOt 
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('import-adj-file').value = ""; 
+                
+                if (pendingAdjImport.length > 0) {
+                    
+                    // 1. TÍNH TOÁN TỔNG SỐ TT/HC CHO TIÊU ĐỀ MODAL
+                    let mSumReal = { bf: 0, lu: 0, di: 0, ot: 0 };
+                    let mSumAdj = { bf: 0, lu: 0, di: 0, ot: 0 };
+                    
+                    pendingAdjImport.forEach(item => {
+                        if(item.rBf === 'X' || item.rBf === 'Y') mSumReal.bf++;
+                        if(item.rLu === 'X' || item.rLu === 'Y') mSumReal.lu++;
+                        if(item.rDi === 'X' || item.rDi === 'Y') mSumReal.di++;
+                        if(item.rOt === 'X' || item.rOt === 'Y') mSumReal.ot++;
+
+                        let finBf = item.breakfast === '' ? item.rBf : item.breakfast;
+                        let finLu = item.lunch === '' ? item.rLu : item.lunch;
+                        let finDi = item.dinner === '' ? item.rDi : item.dinner;
+                        let finOt = item.ot === '' ? item.rOt : item.ot;
+
+                        if(finBf === 'X' || finBf === 'Y') mSumAdj.bf++;
+                        if(finLu === 'X' || finLu === 'Y') mSumAdj.lu++;
+                        if(finDi === 'X' || finDi === 'Y') mSumAdj.di++;
+                        if(finOt === 'X' || finOt === 'Y') mSumAdj.ot++;
+                    });
+
+                    // 2. RENDER TIÊU ĐỀ MODAL
+                    let getDiffHtml = (adj, real) => {
+                        let diff = adj - real;
+                        let badge = diff > 0 ? `<span class="badge bg-danger rounded-pill ms-1 px-1">+${diff}</span>` : (diff < 0 ? `<span class="badge bg-primary rounded-pill ms-1 px-1">${diff}</span>` : `<span class="badge bg-light text-muted border border-secondary rounded-pill ms-1 px-1">0</span>`);
+                        return `<div class="mt-1" style="font-size: 0.85em; font-weight: normal; letter-spacing: 0;">TT: <b class="text-secondary">${real}</b> | HC: <b class="text-primary">${adj}</b> ${badge}</div>`;
+                    };
+
+                    document.getElementById('modal-th-bf').innerHTML = `Sáng ${getDiffHtml(mSumAdj.bf, mSumReal.bf)}`;
+                    document.getElementById('modal-th-lu').innerHTML = `Trưa ${getDiffHtml(mSumAdj.lu, mSumReal.lu)}`;
+                    document.getElementById('modal-th-di').innerHTML = `Chiều ${getDiffHtml(mSumAdj.di, mSumReal.di)}`;
+                    document.getElementById('modal-th-ot').innerHTML = `Tăng ca ${getDiffHtml(mSumAdj.ot, mSumReal.ot)}`;
+
+// 3. RENDER NỘI DUNG Ô KÉP (TÔ XÁM THỰC TẾ, Ô HIỆU CHỈNH TRẮNG TINH LÀM NỔI BẬT)
+                    let buildDualUIReadonly = (realV, adjV) => {
+                        let textReal = realV === '0' ? 'O' : realV;
+                        let bgReal = 'bg-secondary bg-opacity-10 text-secondary border-secondary';
+                        let textAdj = adjV === '' ? '-' : (adjV === '0' ? 'O' : adjV);
+                        
+                        let adjStyle = '';
+                        if (adjV === 'X') adjStyle = 'text-primary border-primary';
+                        else if (adjV === 'Y') adjStyle = 'text-danger border-danger';
+                        else if (adjV === '0') adjStyle = 'text-secondary border-secondary';
+                        else adjStyle = 'text-muted border-secondary';
+                        
+                        // ĐÃ BỔ SUNG width: 100%; VÀO DÒNG DƯỚI ĐÂY
+                        let adjHtml = `<div class="border border-2 rounded fw-bold bg-white shadow-sm ${adjStyle}" style="width: 100%; height: 29px; display: flex; align-items: center; justify-content: center; font-size: 0.9em;">${textAdj}</div>`;
+                        
+                        return `<div class="dual-cell">
+                                    <div style="opacity: 0.4;"><div class="border rounded fw-bold real-val ${bgReal}" title="Thực tế gốc">${textReal}</div></div>
+                                    <div>${adjHtml}</div>
+                                </div>`;
+                    };
+
+                    let html = pendingAdjImport.map(item => `<tr>
+                        <td class="fw-bold align-middle">${item.mnv}</td>
+                        <td class="text-start text-primary fw-bold align-middle">${item.name}</td>
+                        <td class="text-success fw-bold align-middle">${item.date}</td>
+                        <td class="align-middle">${buildDualUIReadonly(item.rBf, item.breakfast)}</td>
+                        <td class="align-middle">${buildDualUIReadonly(item.rLu, item.lunch)}</td>
+                        <td class="align-middle">${buildDualUIReadonly(item.rDi, item.dinner)}</td>
+                        <td class="align-middle">${buildDualUIReadonly(item.rOt, item.ot)}</td>
+                        <td class="text-start align-middle">${item.note}</td>
+                    </tr>`).join('');
+                    
+                    document.getElementById('confirm-adj-import-body').innerHTML = html;
+                    let modal = new bootstrap.Modal(document.getElementById('confirm-adj-import-modal'));
+                    modal.show();
+                } else {
+                    showToast("File Excel giống y hệt hệ thống, không có thay đổi nào!", "warning");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Lỗi khi đọc file Excel. Định dạng không hợp lệ!", "danger");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+// HÀM 2: XỬ LÝ KHI NGƯỜI DÙNG BẤM "TIẾP TỤC NHẬP" (TỰ ĐỘNG LƯU)
+    function processAdjImport() {
+        if (pendingAdjImport.length === 0) return;
+
+        let mealArray = [];
+
+        // Đẩy toàn bộ dữ liệu chờ vào Cache và chuẩn bị mảng gửi đi
+        pendingAdjImport.forEach(item => {
+            tempAdjustCache[`${item.mnv}_${item.date}`] = item;
+            
+            // Lấy ra đúng định dạng Backend cần để lưu
+            mealArray.push({
+                mnv: item.mnv,
+                name: item.name,
+                date: item.date,
+                breakfast: item.breakfast,
+                lunch: item.lunch,
+                dinner: item.dinner,
+                ot: item.ot,
+                note: item.note
+            });
+        });
+
+        // Đóng Modal
+        let modalEl = document.getElementById('confirm-adj-import-modal');
+        let modalObj = bootstrap.Modal.getInstance(modalEl);
+        if (modalObj) modalObj.hide();
+
+        pendingAdjImport = []; // Giải phóng bộ nhớ
+        
+        // Gọi lại hàm render để giao diện tự cập nhật số và tô màu vàng tạm thời
+        renderAdjustGrid(); 
+
+        // TỰ ĐỘNG GỌI HÀM LƯU LÊN HỆ THỐNG
+        if (mealArray.length > 0) {
+            showToast("Đang lưu dữ liệu hiệu chỉnh từ Excel lên hệ thống...", "info");
+            sendAdjustData(mealArray); // Bắn thẳng dữ liệu lên Google Sheets
+        }
+    }
+function submitAdjustGrid() {
+        let dStrInput = document.getElementById('adj-date').value; 
+        if(!dStrInput) return showToast("Chọn ngày!", 'danger');
+        
+        let rows = document.querySelectorAll('#adj-grid-body tr');
+        rows.forEach(tr => {
+            let mnv = tr.getAttribute('data-mnv');
+            let rowDate = tr.getAttribute('data-date'); // QUAN TRỌNG: Chỉ lưu ngày của chính dòng đang xét
+            if(!mnv || !rowDate) return;
+            
+            let bfEl = tr.querySelector('.ms-bf'), luEl = tr.querySelector('.ms-lu'), diEl = tr.querySelector('.ms-di'), otEl = tr.querySelector('.ms-ot');
+            if(!bfEl && !luEl && !diEl && !otEl) return;
+            
+            let bf = bfEl.value, lu = luEl ? luEl.value : '', di = diEl ? diEl.value : '', ot = otEl ? otEl.value : '';
+            let note = tr.querySelector('.meal-note') ? tr.querySelector('.meal-note').value : '';
+            
+            // LƯU ĐÚNG 1 NGÀY VÀO CACHE THAY VÌ LƯU HÀNG LOẠT
+            tempAdjustCache[`${mnv}_${rowDate}`] = { mnv: mnv, name: tr.getAttribute('data-name'), date: rowDate, breakfast: bf, lunch: lu, dinner: di, ot: ot, note: note };
+        });
+
+        let mealArray = [];
+        Object.values(tempAdjustCache).forEach(item => {
+            let existingAdj = hcData.find(m => String(m.mnv) === String(item.mnv) && m.date === item.date);
+            let hasValue = item.breakfast !== '' || item.lunch !== '' || item.dinner !== '' || item.ot !== '' || item.note.trim() !== '';
+            let hadValueBefore = existingAdj ? true : false;
+            
+            if (hasValue || hadValueBefore) {
+                mealArray.push(item);
+            }
+        });
+
         if (mealArray.length > 0) {
             sendAdjustData(mealArray);
         } else {
-            showToast("Chưa có thay đổi nào để lưu!", "danger");
+            showToast("Chưa có dữ liệu nào được hiệu chỉnh để lưu!", "danger");
         }
     }
 
@@ -4330,7 +5220,7 @@ function submitCopyDate() {
     })();
 
     // --- THÊM MỚI: Hàm Cập nhật trạng thái khóa cho form bên phải của Lịch ---
-    function updateRightPanelLocks() {
+function updateRightPanelLocks() {
         let lockBf = false, lockLu = false, lockDi = false, lockOt = false;
         if (selectedVcalDates.size > 0) {
             selectedVcalDates.forEach(dateStr => {
@@ -4348,9 +5238,23 @@ function submitCopyDate() {
         if (bfEl) { bfEl.disabled = lockBf; if (lockBf) { bfEl.value = '0'; updateSelectColor(bfEl); } }
         if (luEl) { luEl.disabled = lockLu; if (lockLu) { luEl.value = '0'; updateSelectColor(luEl); } }
         if (diEl) { diEl.disabled = lockDi; if (lockDi) { diEl.value = '0'; updateSelectColor(diEl); } }
+        
         if (otEl) {
-            if (currentUser && !['Admin_full', 'Admin_BP'].includes(currentUser.role)) { otEl.disabled = true; } 
-            else { otEl.disabled = lockOt; if (lockOt) { otEl.value = '0'; updateSelectColor(otEl); } }
+            let isStaff = currentUser && !['admin_full', 'admin_bp'].includes(String(currentUser.role).trim().toLowerCase());
+            if (isStaff) { 
+                // ÉP CỨNG: Khóa và tô xám
+                otEl.disabled = true; 
+                otEl.value = '0';
+                updateSelectColor(otEl);
+                otEl.style.backgroundColor = '#e9ecef'; 
+                otEl.style.cursor = 'not-allowed';
+            } 
+            else { 
+                otEl.disabled = lockOt; 
+                otEl.style.backgroundColor = lockOt ? '#e9ecef' : '';
+                otEl.style.cursor = lockOt ? 'not-allowed' : 'pointer';
+                if (lockOt) { otEl.value = '0'; updateSelectColor(otEl); } 
+            }
         }
     }	
 // --- THÊM MỚI: CÁC BIẾN TOÀN CỤC CHO PREVIEW ---
